@@ -1,6 +1,7 @@
+// import dynamic from 'next/dynamic';
 // import type { Metadata } from "next";
 // import "./globals.css";
-// import Sidebar  from "@/components/layout/Sidebar";
+// const Sidebar = dynamic(() => import('@/components/layout/Sidebar'));
 // import { Navbar } from "@/components/layout/Navbar";
 // import { ThemeProvider } from "@/components/ThemeProvider"; // Import du provider
 

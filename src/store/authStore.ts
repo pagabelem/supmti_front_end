@@ -1,81 +1,138 @@
+// // src/store/authStore.ts
+// import { create } from 'zustand';
+// import { persist } from 'zustand/middleware';
+
+// // ─── Type User aligné avec ce que renvoie le backend ─────────
+// export interface User {
+//   id:         string;
+//   full_name:  string;
+//   email:      string;
+//   role:       'student' | 'admin';
+//   is_active?: boolean;
+//   created_at?: string;
+//   // Champs optionnels renvoyés par /api/session
+//   average?:   number;
+//   bac_type?:  string;
+//   level?:     string;
+//   city?:      string;
+//   interests?: string[];
+// }
+
+// interface AuthState {
+//   user:    User | null;
+//   token:   string | null;
+//   setAuth: (user: User, token: string) => void;
+//   logout:  () => void;
+// }
+
+// export const useAuthStore = create<AuthState>()(
+//   persist(
+//     (set) => ({
+//       user:  null,
+//       token: null,
+
+//       setAuth: (user, token) => set({ user, token }),
+
+//       logout: () => {
+//         // Appel optionnel au backend pour effacer le cookie de session
+//         fetch(
+//           `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/auth/logout`,
+//           { method: 'POST', credentials: 'include' }
+//         ).catch(() => {});
+//         set({ user: null, token: null });
+//       },
+//     }),
+//     {
+//       name: 'supmti-auth',
+//       // Ne persiste que user et token (pas les fonctions)
+//       partialize: (state) => ({ user: state.user, token: state.token }),
+//     }
+//   )
+// );
+
+
+
+
+// src/store/authStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '../types/user';
 
-interface AuthState {
-  user: User | null;
-  users: User[];
-  token: string | null;
-  login: (email: string, password: string) => boolean;
-  register: (userData: any) => void;
-  setAuth: (user: User, token: string) => void;
-  logout: () => void;
+export interface User {
+  id:         string;
+  full_name:  string;
+  email:      string;
+  role:       'student' | 'admin';
+  is_active?: boolean;
+  created_at?: string;
+  average?:   number;
+  bac_type?:  string;
+  level?:     string;
+  city?:      string;
+  interests?: string[];
 }
 
-const DEFAULT_STUDENT: User = {
-  id: 'std-001',
-  full_name: 'Amine Slimani',
-  email: 'student@supmti.ma',
-  role: 'student', // Correction : 'student' match ton type Role
-  is_active: true,
-  created_at: new Date().toISOString(),
-  average: 15.5,
-  bac_type: 'PC',
-  level: '2ème année Bac',
-  city: 'Fès',
-  interests: ['Informatique', 'Robotique']
-};
+interface AuthState {
+  user:    User | null;
+  token:   string | null;
+  setAuth: (user: User, token: string) => void;
+  logout:  () => void;
+}
 
-const DEFAULT_ADMIN: User = {
-  id: 'admin-001',
-  full_name: 'Admin SUPMTI',
-  email: 'admin@supmti.ma',
-  role: 'admin', // Correction : 'admin' match ton type Role
-  is_active: true,
-  created_at: new Date().toISOString(),
-};
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+// ── Clés localStorage à vider à la déconnexion ───────────────
+const LS_KEYS_TO_CLEAR = [
+  'peermatch_demande_id',  // demande PeerMatch de l'ancien user
+  'supmti-session',        // sessionStore Zustand
+  'supmti-chat',           // chatStore si persisté
+  'supmti-settings',       // préférences (optionnel — commenter si tu veux garder)
+  'sami-ai-config',        // config IA admin
+];
+
+function clearAllUserData() {
+  // 1. Vider les clés spécifiques
+  LS_KEYS_TO_CLEAR.forEach(key => localStorage.removeItem(key));
+
+  // 2. Vider supmti-auth (sera re-set à null par Zustand)
+  // On ne fait pas localStorage.clear() pour ne pas casser next-themes etc.
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
-      user: null,
+    (set) => ({
+      user:  null,
       token: null,
-      users: [DEFAULT_ADMIN, DEFAULT_STUDENT],
 
-      login: (email, password) => {
-        const foundUser = get().users.find(u => u.email === email);
-        if (foundUser) {
-          set({ user: foundUser, token: "session_token_" + Math.random() });
-          return true;
-        }
-        return false;
+      setAuth: (user, token) => {
+        // Au login d'un nouveau user — nettoyer les données de l'ancien
+        clearAllUserData();
+        set({ user, token });
       },
 
-      register: (userData) => {
-        const newUser: User = {
-          id: `user-${Math.random().toString(36).substr(2, 9)}`,
-          full_name: userData.full_name || 'Nouvel Étudiant',
-          email: userData.email || '',
-          role: 'student', // On utilise 'student' au lieu de 'user'
-          is_active: true,
-          created_at: new Date().toISOString(),
-          average: userData.average || 0,
-          bac_type: userData.bac_type || '',
-          level: userData.level || '',
-          city: userData.city || '',
-          interests: userData.interests || [],
-        };
+      logout: () => {
+        // 1. Appel backend pour invalider cookie supmti_sid
+        fetch(`${API}/api/auth/logout`, {
+          method: 'POST', credentials: 'include'
+        }).catch(() => {});
 
-        set((state) => ({
-          users: [...state.users, newUser],
-          user: newUser,
-          token: "new_session_token"
-        }));
+        // 2. Reset session SAMI côté backend
+        fetch(`${API}/api/reset`, {
+          method: 'POST', credentials: 'include'
+        }).catch(() => {});
+
+        // 3. Nettoyer tout le localStorage utilisateur
+        clearAllUserData();
+
+        // 4. Vider le store Zustand
+        set({ user: null, token: null });
+
+        // 5. Dispatch event pour vider ChatWindow et SessionStore
+        window.dispatchEvent(new CustomEvent('sami:logout'));
       },
-
-      setAuth: (user, token) => set({ user, token }),
-      logout: () => set({ user: null, token: null }),
     }),
-    { name: 'supmti-auth-system' }
+    {
+      name: 'supmti-auth',
+      partialize: (state) => ({ user: state.user, token: state.token }),
+    }
   )
 );

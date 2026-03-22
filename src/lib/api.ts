@@ -12,6 +12,7 @@ export async function sendMessage(message: string, historique: any[] = []) {
   return res.json();
 }
 
+
 export async function getSession() {
   const res = await fetch(`${API_URL}/api/session`, {
     credentials: 'include'

@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import './sidepanel.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   /* Couleurs de base - Mode Clair */
@@ -6,63 +9,88 @@
   --foreground: #0f172a;
   
   /* Identité Visuelle SUPMTI */
-  --supmti-blue: #1e3a8a;
+  --supmti-blue: #006666;
   --supmti-red: #e11d48;
+
+  /* Variables pour ton Dashboard (Mode Clair) */
+  --bg-primary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-input: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --accent-cyan: #06b6d4;
+  --accent-green: #22c55e;
   
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
 }
 
-/* AJOUT : C'est ici que la magie opère pour le Dark Mode manuel */
+/* Mode Sombre : On redéfinit les variables */
 .dark {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #0d0f14;
+  --foreground: #e8eaf0;
+
+  /* Variables Dashboard (Mode Sombre - tes codes couleurs) */
+  --bg-primary: #0d0f14;
+  --bg-card: #1a1d27;
+  --bg-input: #1e2130;
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b90a0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Liaison des variables CSS avec les utilitaires Tailwind */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-input: var(--bg-input);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  
   --color-supmti-blue: var(--supmti-blue);
-  --color-supmti-red: var(--supmti-red);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-green: var(--accent-green);
+
+  --font-outfit: var(--font-outfit);
 
   /* --- ANIMATIONS --- */
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(1000%); }
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
   @keyframes blob {
     0% { transform: translate(0px, 0px) scale(1); }
     33% { transform: translate(30px, -50px) scale(1.1); }
     66% { transform: translate(-20px, 20px) scale(0.9); }
     100% { transform: translate(0px, 0px) scale(1); }
   }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
 
-  /* Ajout de l'animation de rotation lente que tu voulais */
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
+  --animate-scan: scan 3s linear infinite;
+  --animate-shake: shake 0.2s ease-in-out 0s 2;
   --animate-blob: blob 7s infinite;
-  --animate-message-appear: fadeIn 0.3s ease-out forwards;
-  --animate-spin-slow: spin-slow 8s linear infinite;
 }
 
-/* --- RESTE DU CSS --- */
+/* --- BASE STYLES --- */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-outfit);
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease; /* Pour un switch fluide */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Ton style .prose est excellent pour les réponses du chatbot */
-.prose h1, .prose h2, .prose h3 {
-  font-weight: 700;
-  color: var(--supmti-blue); /* Reste bleu pour garder l'identité en mode clair */
-}
-
-.dark .prose h1, .dark .prose h2, .dark .prose h3 {
-  color: #60a5fa; /* Bleu plus clair pour le Dark Mode pour rester lisible */
+/* Utilitaires pour l'effet Hacker Admin */
+@layer utilities {
+  .text-glow-emerald {
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  }
+  
+  .border-glow-emerald {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  }
 }
