@@ -44,15 +44,15 @@ export const Navbar = () => {
 
         {user && (
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-3 mr-2 border-r dark:border-slate-800 pr-4">
+            {/* <div className="hidden sm:flex items-center gap-3 mr-2 border-r dark:border-slate-800 pr-4">
               <Link href="/chatbot" className="text-gray-500 dark:text-gray-400 hover:text-supmti-blue text-sm font-bold">Chatbot</Link>
-            </div>
-            <button 
+            </div> */}
+            {/* <button 
               onClick={logout} 
               className="p-2 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-500 hover:bg-red-500 hover:text-white transition-all"
             >
               <LogOut size={18} />
-            </button>
+            </button> */}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useAuthStore }    from '@/store/authStore';
 import { useSessionStore } from '@/store/sessionStore';
+
 import {
   TrendingUp, BookOpen, MessageSquare, GraduationCap,
   Brain, Rocket, Target, ArrowRight, Sparkles, CheckCircle2, Clock,
