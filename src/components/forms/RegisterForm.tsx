@@ -189,6 +189,268 @@
 
 
 
+// 'use client';
+// import { useState } from 'react';
+// import { useForm } from 'react-hook-form';
+// import { zodResolver } from '@hookform/resolvers/zod';
+// import * as z from 'zod';
+// import { useAuthStore } from '@/store/authStore';
+// import { useRouter } from 'next/navigation';
+// import { UserPlus, ShieldCheck, AlertCircle, Loader2, User, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
+
+// const registerSchema = z.object({
+//   full_name: z.string().min(3, 'Nom trop court'),
+//   email: z.string().email('Email invalide'),
+//   password: z.string().min(6, '6 caractères min'),
+//   confirmPassword: z.string(),
+// }).refine((d) => d.password === d.confirmPassword, {
+//   message: 'Les mots de passe ne correspondent pas',
+//   path: ['confirmPassword'],
+// });
+
+// type RegisterValues = z.infer<typeof registerSchema>;
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const colors = { teal: '#005555', red: '#E31E24' };
+
+// export const RegisterForm = () => {
+//   const { setAuth } = useAuthStore();
+//   const router = useRouter();
+//   const [apiError, setApiError] = useState<string | null>(null);
+
+//   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterValues>({
+//     resolver: zodResolver(registerSchema),
+//   });
+
+//   const onSubmit = async (data: RegisterValues) => {
+//     setApiError(null);
+//     try {
+//       const res = await fetch(`${API}/api/auth/register`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ full_name: data.full_name, email: data.email, password: data.password, role: 'student' }),
+//       });
+//       if (!res.ok) {
+//         const json = await res.json().catch(() => ({}));
+//         setApiError(json.detail || json.message || 'Erreur de création.');
+//         return;
+//       }
+//       const loginRes = await fetch(`${API}/api/auth/login`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ email: data.email, password: data.password }),
+//       });
+//       const loginJson = await loginRes.json().catch(() => ({}));
+//       if (loginRes.ok) {
+//         setAuth(loginJson.user ?? loginJson, loginJson.token ?? 'session');
+//         router.push('/chatbot'); 
+//       } else {
+//         router.push('/login');
+//       }
+//     } catch {
+//       setApiError('Serveur inaccessible.');
+//     }
+//   };
+
+//   return (
+//     <div className="w-full max-w-lg mx-auto p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 transition-all">
+//       <div className="text-center mb-8">
+//         <img src="/images/logo-supmti.png" alt="Logo" className="h-16 mx-auto mb-6 dark:brightness-110" />
+//         <div className="w-full flex h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-inner">
+//           <div className="h-full w-1/3" style={{ backgroundColor: colors.red }} />
+//           <div className="h-full w-2/3" style={{ backgroundColor: colors.teal }} />
+//         </div>
+//       </div>
+
+//       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+//         {apiError && (
+//           <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400">
+//             <AlertCircle size={20} />
+//             <p className="text-sm font-semibold">{apiError}</p>
+//           </div>
+//         )}
+
+//         <div className="relative group">
+//           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
+//             <User size={20} />
+//           </div>
+//           <input {...register('full_name')} placeholder="Nom complet" className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//         </div>
+
+//         <div className="relative group">
+//           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
+//             <Mail size={20} />
+//           </div>
+//           <input {...register('email')} placeholder="Email étudiant" className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//         </div>
+
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//           <div className="relative group">
+//             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors"><Lock size={18} /></div>
+//             <input type="password" {...register('password')} placeholder="Mot de passe" className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//           </div>
+//           <div className="relative group">
+//             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors"><Lock size={18} /></div>
+//             <input type="password" {...register('confirmPassword')} placeholder="Confirmation" className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//           </div>
+//         </div>
+
+//         <div className="p-4 bg-slate-50 dark:bg-slate-800 border-l-4 border-[#005555] rounded-r-2xl">
+//           <div className="flex gap-3">
+//             <Sparkles size={18} className="text-[#005555] shrink-0" />
+//             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+//               SAMI t'aidera à finaliser ton profil après l'inscription.
+//             </p>
+//           </div>
+//         </div>
+
+//         <button type="submit" disabled={isSubmitting} style={{ backgroundColor: colors.teal }} className="w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97] hover:shadow-xl hover:shadow-[#005555]/20 disabled:opacity-70">
+//           {isSubmitting ? <Loader2 size={22} className="animate-spin" /> : <><span className="text-lg">Créer mon compte</span> <ArrowRight size={20} /></>}
+//         </button>
+
+//         <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest uppercase">
+//           <ShieldCheck size={14} /> SUPMTI 2026
+//         </div>
+//       </form>
+//     </div>
+//   );
+// };
+
+
+
+
+
+// 'use client';
+// import { useState } from 'react';
+// import { useForm } from 'react-hook-form';
+// import { zodResolver } from '@hookform/resolvers/zod';
+// import * as z from 'zod';
+// import { useAuthStore } from '@/store/authStore';
+// import { useRouter } from 'next/navigation';
+// import { UserPlus, ShieldCheck, AlertCircle, Loader2, User, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
+// import { useLang } from '@/i18n/LanguageContext';
+
+// const registerSchema = z.object({
+//   full_name:       z.string().min(3, 'Nom trop court'),
+//   email:           z.string().email('Email invalide'),
+//   password:        z.string().min(6, '6 caractères min'),
+//   confirmPassword: z.string(),
+// }).refine((d) => d.password === d.confirmPassword, {
+//   message: 'Les mots de passe ne correspondent pas',
+//   path: ['confirmPassword'],
+// });
+// type RegisterValues = z.infer<typeof registerSchema>;
+
+// const API    = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const colors = { teal: '#005555', red: '#E31E24' };
+
+// export const RegisterForm = () => {
+//   const { setAuth } = useAuthStore();
+//   const router = useRouter();
+//   const { t } = useLang();
+//   const [apiError, setApiError] = useState<string | null>(null);
+
+//   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterValues>({
+//     resolver: zodResolver(registerSchema),
+//   });
+
+//   const onSubmit = async (data: RegisterValues) => {
+//     setApiError(null);
+//     try {
+//       const res = await fetch(`${API}/api/auth/register`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ full_name: data.full_name, email: data.email, password: data.password, role: 'student' }),
+//       });
+//       if (!res.ok) {
+//         const json = await res.json().catch(() => ({}));
+//         setApiError(json.detail || json.message || t('panels', 'error_connection'));
+//         return;
+//       }
+//       const loginRes  = await fetch(`${API}/api/auth/login`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ email: data.email, password: data.password }),
+//       });
+//       const loginJson = await loginRes.json().catch(() => ({}));
+//       if (loginRes.ok) { setAuth(loginJson.user ?? loginJson, loginJson.token ?? 'session'); router.push('/chatbot'); }
+//       else             { router.push('/login'); }
+//     } catch { setApiError(t('panels', 'error_connection')); }
+//   };
+
+//   return (
+//     <div className="w-full max-w-lg mx-auto p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 transition-all">
+//       <div className="text-center mb-8">
+//         <img src="/images/logo-supmti.png" alt="Logo" className="h-16 mx-auto mb-6 dark:brightness-110" />
+//         <div className="w-full flex h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-inner">
+//           <div className="h-full w-1/3" style={{ backgroundColor: colors.red }} />
+//           <div className="h-full w-2/3" style={{ backgroundColor: colors.teal }} />
+//         </div>
+//       </div>
+
+//       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+//         {apiError && (
+//           <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400">
+//             <AlertCircle size={20} />
+//             <p className="text-sm font-semibold">{apiError}</p>
+//           </div>
+//         )}
+
+//         <div className="relative group">
+//           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
+//             <User size={20} />
+//           </div>
+//           <input {...register('full_name')} placeholder={t('auth', 'name')}
+//             className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//         </div>
+
+//         <div className="relative group">
+//           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
+//             <Mail size={20} />
+//           </div>
+//           <input {...register('email')} placeholder={t('auth', 'email')}
+//             className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//         </div>
+
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//           <div className="relative group">
+//             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors"><Lock size={18} /></div>
+//             <input type="password" {...register('password')} placeholder={t('auth', 'password')}
+//               className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//           </div>
+//           <div className="relative group">
+//             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors"><Lock size={18} /></div>
+//             <input type="password" {...register('confirmPassword')} placeholder={t('auth', 'password') + ' ×2'}
+//               className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+//           </div>
+//         </div>
+
+//         <div className="p-4 bg-slate-50 dark:bg-slate-800 border-l-4 border-[#005555] rounded-r-2xl">
+//           <div className="flex gap-3">
+//             <Sparkles size={18} className="text-[#005555] shrink-0" />
+//             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+//               {t('profile', 'sami_alert')}
+//             </p>
+//           </div>
+//         </div>
+
+//         <button type="submit" disabled={isSubmitting} style={{ backgroundColor: colors.teal }}
+//           className="w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97] hover:shadow-xl hover:shadow-[#005555]/20 disabled:opacity-70">
+//           {isSubmitting
+//             ? <Loader2 size={22} className="animate-spin" />
+//             : <><span className="text-lg">{t('auth', 'register')}</span> <ArrowRight size={20} /></>
+//           }
+//         </button>
+
+//         <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest uppercase">
+//           <ShieldCheck size={14} /> SUPMTI 2026
+//         </div>
+//       </form>
+//     </div>
+//   );
+// };
+
+
 'use client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -197,25 +459,30 @@ import * as z from 'zod';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { UserPlus, ShieldCheck, AlertCircle, Loader2, User, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { useLang } from '@/i18n/LanguageContext';
 
 const registerSchema = z.object({
-  full_name: z.string().min(3, 'Nom trop court'),
-  email: z.string().email('Email invalide'),
-  password: z.string().min(6, '6 caractères min'),
+  full_name:       z.string().min(3, 'Nom trop court'),
+  email:           z.string().email('Email invalide'),
+  password:        z.string().min(6, '6 caractères min'),
   confirmPassword: z.string(),
 }).refine((d) => d.password === d.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],
 });
-
 type RegisterValues = z.infer<typeof registerSchema>;
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API    = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 const colors = { teal: '#005555', red: '#E31E24' };
 
-export const RegisterForm = () => {
+// ✅ Export nommé (utilisé par login/page.tsx)
+export const RegisterForm = RegisterFormComponent;
+
+// ✅ Export par défaut (compatibilité)
+export default function RegisterFormComponent() {
   const { setAuth } = useAuthStore();
   const router = useRouter();
+  const { t } = useLang();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterValues>({
@@ -232,24 +499,18 @@ export const RegisterForm = () => {
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        setApiError(json.detail || json.message || 'Erreur de création.');
+        setApiError(json.detail || json.message || t('panels', 'error_connection'));
         return;
       }
-      const loginRes = await fetch(`${API}/api/auth/login`, {
+      const loginRes  = await fetch(`${API}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: data.email, password: data.password }),
       });
       const loginJson = await loginRes.json().catch(() => ({}));
-      if (loginRes.ok) {
-        setAuth(loginJson.user ?? loginJson, loginJson.token ?? 'session');
-        router.push('/chatbot'); 
-      } else {
-        router.push('/login');
-      }
-    } catch {
-      setApiError('Serveur inaccessible.');
-    }
+      if (loginRes.ok) { setAuth(loginJson.user ?? loginJson, loginJson.token ?? 'session'); router.push('/chatbot'); }
+      else             { router.push('/login'); }
+    } catch { setApiError(t('panels', 'error_connection')); }
   };
 
   return (
@@ -270,42 +531,62 @@ export const RegisterForm = () => {
           </div>
         )}
 
+        {/* Nom complet */}
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
             <User size={20} />
           </div>
-          <input {...register('full_name')} placeholder="Nom complet" className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+          <input {...register('full_name')} placeholder={t('auth', 'name')}
+            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+          {errors.full_name && <p className="text-xs text-red-500 mt-1 ml-1">{errors.full_name.message}</p>}
         </div>
 
+        {/* Email */}
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
             <Mail size={20} />
           </div>
-          <input {...register('email')} placeholder="Email étudiant" className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+          <input {...register('email')} placeholder={t('auth', 'email')}
+            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+          {errors.email && <p className="text-xs text-red-500 mt-1 ml-1">{errors.email.message}</p>}
         </div>
 
+        {/* Mots de passe */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors"><Lock size={18} /></div>
-            <input type="password" {...register('password')} placeholder="Mot de passe" className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
+              <Lock size={18} />
+            </div>
+            <input type="password" {...register('password')} placeholder={t('auth', 'password')}
+              className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+            {errors.password && <p className="text-xs text-red-500 mt-1 ml-1">{errors.password.message}</p>}
           </div>
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors"><Lock size={18} /></div>
-            <input type="password" {...register('confirmPassword')} placeholder="Confirmation" className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555] transition-colors">
+              <Lock size={18} />
+            </div>
+            <input type="password" {...register('confirmPassword')} placeholder={t('auth', 'password') + ' ×2'}
+              className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] transition-all shadow-sm" />
+            {errors.confirmPassword && <p className="text-xs text-red-500 mt-1 ml-1">{errors.confirmPassword.message}</p>}
           </div>
         </div>
 
+        {/* Info SAMI */}
         <div className="p-4 bg-slate-50 dark:bg-slate-800 border-l-4 border-[#005555] rounded-r-2xl">
           <div className="flex gap-3">
             <Sparkles size={18} className="text-[#005555] shrink-0" />
             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-              SAMI t'aidera à finaliser ton profil après l'inscription.
+              {t('profile', 'sami_alert')}
             </p>
           </div>
         </div>
 
-        <button type="submit" disabled={isSubmitting} style={{ backgroundColor: colors.teal }} className="w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97] hover:shadow-xl hover:shadow-[#005555]/20 disabled:opacity-70">
-          {isSubmitting ? <Loader2 size={22} className="animate-spin" /> : <><span className="text-lg">Créer mon compte</span> <ArrowRight size={20} /></>}
+        <button type="submit" disabled={isSubmitting} style={{ backgroundColor: colors.teal }}
+          className="w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97] hover:shadow-xl hover:shadow-[#005555]/20 disabled:opacity-70">
+          {isSubmitting
+            ? <Loader2 size={22} className="animate-spin" />
+            : <><span className="text-lg">{t('auth', 'register')}</span> <ArrowRight size={20} /></>
+          }
         </button>
 
         <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest uppercase">
@@ -314,4 +595,4 @@ export const RegisterForm = () => {
       </form>
     </div>
   );
-};
+}

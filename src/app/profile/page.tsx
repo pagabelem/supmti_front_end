@@ -764,6 +764,333 @@
 
 
 
+// 'use client';
+// import { useState, useEffect, useCallback } from 'react';
+// import { useForm, SubmitHandler } from 'react-hook-form';
+// import { zodResolver } from '@hookform/resolvers/zod';
+// import * as z from 'zod';
+// import { useAuthStore } from '@/store/authStore';
+// import { useSessionStore } from '@/store/sessionStore';
+// import {
+//   Save, Loader2, CheckCircle2, AlertCircle,
+//   User, GraduationCap, ArrowLeft,
+//   Brain, BarChart3, Sparkles, MapPin, Target, ClipboardList
+// } from 'lucide-react';
+// import Link from 'next/link';
+// import { cn } from '@/lib/utils';
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const colors = { teal: '#005555', red: '#E31E24' };
+
+// function getUid() {
+//   try { return JSON.parse(localStorage.getItem('supmti-auth')||'{}')?.state?.user?.id||''; }
+//   catch { return ''; }
+// }
+
+// const schema = z.object({
+//   full_name: z.string().min(2, 'Nom requis'),
+//   average: z.coerce.number().min(0).max(20),
+//   bac_type: z.string().min(1, 'BAC requis'),
+//   level: z.string().min(1, 'Niveau requis'),
+//   city: z.string().min(1, 'Ville requise'),
+//   interests: z.string().min(2, 'Intérêts requis'),
+// });
+// type V = z.infer<typeof schema>;
+
+// // Style des inputs harmonisé avec Login/Register
+// const inp = "w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] focus:ring-4 focus:ring-[#005555]/5 transition-all shadow-sm placeholder:text-slate-400";
+// const lbl = "block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-4";
+
+// const BAC_CONNUS = [
+//   'SMA', 'SMB', 'SP', 'SVT', 'STE', 'STM', 'STGC',
+//   'SEG', 'SGC', 'LSH', 'S', 'SM', 'D', 'E', 'C', 'L', 'A',
+//   'BAC_GENERAL_FR', 'PC', 'Eco', 'Info', 'Lettres',
+// ];
+
+// function mergeWithSami(base: Partial<V>, profil: any): V {
+//   const info = profil?.informations_personnelles || {};
+//   const acad = profil?.parcours_academique || {};
+//   const inter = profil?.preferences?.centres_interet || [];
+
+//   return {
+//     full_name: (info.prenom ? `${info.prenom} ${info.nom || ''}`.trim() : '') || base.full_name || '',
+//     average: acad.moyenne_generale > 0 ? acad.moyenne_generale : Number(base.average) || 0,
+//     bac_type: (acad.type_bac && acad.type_bac !== 'AUTRE' ? acad.type_bac : '') || base.bac_type || '',
+//     level: (acad.niveau_actuel || acad.diplome_actuel || '') || base.level || '',
+//     city: info.ville || base.city || '',
+//     interests: inter.length > 0 ? inter.join(', ') : base.interests || '',
+//   };
+// }
+
+// export default function ProfilePage() {
+//   const { user, setAuth, token } = useAuthStore();
+//   const { profil } = useSessionStore();
+
+//   const [status, setStatus] = useState<'idle'|'success'|'error'>('idle');
+//   const [apiError, setApiError] = useState<string|null>(null);
+//   const [loading, setLoading] = useState(true);
+//   const [dbBase, setDbBase] = useState<Partial<V>>({});
+//   const [samiAlert, setSamiAlert] = useState(false);
+//   const [bacLibre, setBacLibre] = useState(false);
+
+//   const { register, handleSubmit, reset, watch, setValue,
+//     formState: { errors, isSubmitting, isDirty } } = useForm<V>({
+//     resolver: zodResolver(schema),
+//     defaultValues: { full_name:'', average:0, bac_type:'', level:'', city:'', interests:'' },
+//   });
+
+//   const loadFromDB = useCallback(async () => {
+//     const uid = getUid();
+//     if (!uid) { setLoading(false); return; }
+//     try {
+//       const res = await fetch(`${API}/api/profil`, {
+//         credentials: 'include',
+//         headers: { 'X-User-Id': uid },
+//       });
+//       const data = await res.json();
+//       const samiProfil = data.profil || data;
+//       const interetsDB = Array.isArray(data.interests) ? data.interests : samiProfil?.preferences?.centres_interet || [];
+
+//       const base: Partial<V> = {
+//         full_name: data.full_name || user?.full_name || '',
+//         average: Number(data.average) || 0,
+//         bac_type: data.bac_type || '',
+//         level: data.level || '',
+//         city: data.city || '',
+//         interests: interetsDB.length > 0 ? interetsDB.join(', ') : '',
+//       };
+//       setDbBase(base);
+//       const merged = mergeWithSami(base, profil);
+//       reset(merged);
+//       if (merged.bac_type && !BAC_CONNUS.includes(merged.bac_type)) setBacLibre(true);
+//     } catch {
+//       setLoading(false);
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, [profil, user, reset]);
+
+//   useEffect(() => { loadFromDB(); }, []);
+
+//   useEffect(() => {
+//     if (!profil || loading) return;
+//     const merged = mergeWithSami(dbBase, profil);
+//     reset(merged, { keepDirty: false });
+//     setBacLibre(merged.bac_type && !BAC_CONNUS.includes(merged.bac_type) ? true : false);
+//     setSamiAlert(true);
+//     const t = setTimeout(() => setSamiAlert(false), 6000);
+//     return () => clearTimeout(t);
+//   }, [profil]);
+
+//   const onSubmit: SubmitHandler<V> = async (data) => {
+//     setApiError(null); setStatus('idle');
+//     try {
+//       const payload = { ...data, interests: data.interests.split(',').map(i => i.trim()).filter(Boolean), user_id: user?.id };
+//       const res = await fetch(`${API}/api/profil`, {
+//         method: 'PUT',
+//         credentials: 'include',
+//         headers: { 'Content-Type': 'application/json', 'X-User-Id': user?.id || '' },
+//         body: JSON.stringify(payload),
+//       });
+//       if (!res.ok) { setStatus('error'); return; }
+//       setAuth({ ...user, ...data, interests: payload.interests }, token!);
+//       setDbBase(data);
+//       setStatus('success');
+//       setTimeout(() => setStatus('idle'), 3000);
+//     } catch { setStatus('error'); }
+//   };
+
+//   const avgVal = watch('average');
+//   const bacVal = watch('bac_type');
+//   const lvlVal = watch('level');
+//   const fitEst = avgVal > 0 ? Math.min(100, Math.round((avgVal / 20) * 60 + (bacVal ? 20 : 0) + (lvlVal ? 20 : 0))) : null;
+
+//   return (
+//     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 transition-colors duration-300">
+//       <div className="max-w-2xl mx-auto">
+        
+//         {/* Header avec Logo et Marque */}
+//         <div className="text-center mb-10">
+//           <img src="/images/logo-supmti.png" alt="SUPMTI" className="h-16 mx-auto mb-6 dark:brightness-110" />
+//           <div className="w-full flex h-2 rounded-full overflow-hidden shadow-inner bg-white dark:bg-slate-900">
+//             <div className="h-full w-[30%]" style={{ backgroundColor: colors.red }} />
+//             <div className="h-full w-[70%]" style={{ backgroundColor: colors.teal }} />
+//           </div>
+//         </div>
+
+//         {/* Navigation & Titre */}
+//         <div className="flex items-center justify-between mb-8">
+//           <div className="flex items-center gap-4">
+//             <Link href="/chatbot" className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-[#005555] transition-all shadow-sm">
+//               <ArrowLeft size={20}/>
+//             </Link>
+//             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Mon Profil</h1>
+//           </div>
+//           {status === 'success' && (
+//             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 animate-in fade-in zoom-in">
+//               <CheckCircle2 size={16}/> <span className="text-xs font-bold">Enregistré</span>
+//             </div>
+//           )}
+//         </div>
+
+//         {/* Alert SAMI Sync */}
+//         {samiAlert && (
+//           <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-400 rounded-r-2xl mb-6 flex items-center gap-4 animate-in slide-in-from-right-4">
+//             <div className="p-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm">
+//               <Sparkles size={18} className="text-orange-500 animate-pulse"/>
+//             </div>
+//             <p className="text-sm text-orange-800 dark:text-orange-300 font-medium leading-tight">
+//               SAMI a détecté de nouvelles informations ! <br/>
+//               <span className="text-[11px] opacity-80 italic">Pense à sauvegarder pour confirmer les changements.</span>
+//             </p>
+//           </div>
+//         )}
+
+//         {/* Cards Statistiques */}
+//         <div className="grid grid-cols-3 gap-4 mb-8">
+//           {[
+//             { icon: BarChart3, val: avgVal > 0 ? `${avgVal}/20` : '—', label: 'Moyenne', color: 'text-orange-500' },
+//             { icon: Brain, val: bacVal || '—', label: 'Série BAC', color: 'text-purple-500' },
+//             { icon: Target, val: fitEst ? `${fitEst}%` : '—', label: 'FitScore', color: fitEst && fitEst >= 70 ? 'text-[#005555]' : 'text-orange-400' },
+//           ].map((card, i) => (
+//             <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm text-center">
+//               <card.icon size={18} className={`${card.color} mx-auto mb-2 opacity-80`}/>
+//               <div className="text-lg font-black text-slate-900 dark:text-white truncate px-1">{card.val}</div>
+//               <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{card.label}</div>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* Formulaire Principal */}
+//         <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+//           {loading ? (
+//             <div className="flex flex-col items-center py-20 gap-4 text-slate-400">
+//               <Loader2 size={32} className="animate-spin text-[#005555]"/>
+//               <span className="text-xs font-bold uppercase tracking-widest">Synchronisation...</span>
+//             </div>
+//           ) : (
+//             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              
+//               {/* Nom Complet */}
+//               <div className="group">
+//                 <label className={lbl}>Identité</label>
+//                 <div className="relative">
+//                   <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+//                   <input {...register('full_name')} placeholder="Nom et Prénom" className={inp}/>
+//                 </div>
+//               </div>
+
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//                 {/* Moyenne */}
+//                 <div className="group">
+//                   <label className={lbl}>Moyenne</label>
+//                   <div className="relative">
+//                     <BarChart3 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+//                     <input type="number" step="0.01" {...register('average')} placeholder="Moyenne / 20" className={inp}/>
+//                   </div>
+//                 </div>
+
+//                 {/* Ville */}
+//                 <div className="group">
+//                   <label className={lbl}>Localisation</label>
+//                   <div className="relative">
+//                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+//                     <input {...register('city')} placeholder="Ville" className={inp}/>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* BAC Type */}
+//               <div className="group">
+//                 <label className={lbl}>Diplôme de base</label>
+//                 <div className="relative space-y-3">
+//                   <div className="relative">
+//                     <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+//                     <select
+//                       value={bacLibre ? '__autre__' : (watch('bac_type') || '')}
+//                       onChange={(e) => {
+//                         const val = e.target.value;
+//                         if (val === '__autre__') { setBacLibre(true); setValue('bac_type', ''); }
+//                         else { setBacLibre(false); setValue('bac_type', val, { shouldDirty: true }); }
+//                       }}
+//                       className={inp}
+//                     >
+//                       <option value="">Choisir ton BAC...</option>
+//                       <optgroup label="Sciences & Tech">
+//                         <option value="SMA">Sciences Maths A</option>
+//                         <option value="SMB">Sciences Maths B</option>
+//                         <option value="SP">Sciences Physiques</option>
+//                         <option value="SVT">SVT</option>
+//                       </optgroup>
+//                       <optgroup label="Économie & Gestion">
+//                         <option value="SEG">Sciences Économiques</option>
+//                         <option value="SGC">Sciences Gestion Comptable</option>
+//                       </optgroup>
+//                       <option value="__autre__">Autre diplôme (Licence, BTS...)</option>
+//                     </select>
+//                   </div>
+//                   {bacLibre && (
+//                     <input 
+//                       {...register('bac_type')} 
+//                       autoFocus 
+//                       placeholder="Précisez votre diplôme..." 
+//                       className={cn(inp, "border-orange-200 dark:border-orange-900/50 bg-orange-50/30 dark:bg-orange-900/10")} 
+//                     />
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Niveau Actuel */}
+//               <div className="group">
+//                 <label className={lbl}>Situation Actuelle</label>
+//                 <div className="relative">
+//                   <ClipboardList className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+//                   <input {...register('level')} placeholder="Ex: Terminale, BAC+2..." className={inp}/>
+//                 </div>
+//               </div>
+
+//               {/* Intérêts */}
+//               <div className="group">
+//                 <label className={lbl}>Passions & Intérêts</label>
+//                 <div className="relative">
+//                   <Sparkles className="absolute left-4 top-4 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+//                   <textarea {...register('interests')} rows={3} placeholder="IA, Finance, Développement web..." className={cn(inp, "pl-11 pt-3 resize-none")}/>
+//                 </div>
+//               </div>
+
+//               {/* Bouton de sauvegarde */}
+//               <button
+//                 type="submit"
+//                 disabled={isSubmitting}
+//                 style={{ backgroundColor: colors.teal }}
+//                 className="w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97] hover:opacity-90 shadow-xl shadow-[#005555]/20 disabled:opacity-50"
+//               >
+//                 {isSubmitting ? <Loader2 size={20} className="animate-spin"/> : <Save size={20}/>}
+//                 <span>{isDirty ? 'Enregistrer les modifications' : 'Profil à jour'}</span>
+//               </button>
+//             </form>
+//           )}
+//         </div>
+
+//         {/* Footer info */}
+//         <div className="mt-8 flex items-center justify-center gap-6">
+//            <div className="flex items-center gap-2">
+//               <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+//               <span className="text-[10px] font-bold text-slate-400 uppercase">Sync DB</span>
+//            </div>
+//            <div className="flex items-center gap-2">
+//               <div className={cn("w-2 h-2 rounded-full", profil ? "bg-orange-500 animate-pulse" : "bg-slate-300")}></div>
+//               <span className="text-[10px] font-bold text-slate-400 uppercase">SAMI Intelligence</span>
+//            </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -771,6 +1098,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthStore } from '@/store/authStore';
 import { useSessionStore } from '@/store/sessionStore';
+import { useLang } from '@/i18n/LanguageContext'; // Ajouté
 import {
   Save, Loader2, CheckCircle2, AlertCircle,
   User, GraduationCap, ArrowLeft,
@@ -797,7 +1125,6 @@ const schema = z.object({
 });
 type V = z.infer<typeof schema>;
 
-// Style des inputs harmonisé avec Login/Register
 const inp = "w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555] focus:ring-4 focus:ring-[#005555]/5 transition-all shadow-sm placeholder:text-slate-400";
 const lbl = "block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 ml-4";
 
@@ -825,6 +1152,7 @@ function mergeWithSami(base: Partial<V>, profil: any): V {
 export default function ProfilePage() {
   const { user, setAuth, token } = useAuthStore();
   const { profil } = useSessionStore();
+  const { t, isRTL } = useLang(); // Ajouté
 
   const [status, setStatus] = useState<'idle'|'success'|'error'>('idle');
   const [apiError, setApiError] = useState<string|null>(null);
@@ -906,7 +1234,7 @@ export default function ProfilePage() {
   const fitEst = avgVal > 0 ? Math.min(100, Math.round((avgVal / 20) * 60 + (bacVal ? 20 : 0) + (lvlVal ? 20 : 0))) : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 transition-colors duration-300" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-2xl mx-auto">
         
         {/* Header avec Logo et Marque */}
@@ -922,13 +1250,13 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link href="/chatbot" className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-[#005555] transition-all shadow-sm">
-              <ArrowLeft size={20}/>
+              <ArrowLeft size={20} className={isRTL ? 'rotate-180' : ''}/>
             </Link>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Mon Profil</h1>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{t('profile', 'title')}</h1>
           </div>
           {status === 'success' && (
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-100 dark:border-emerald-800 animate-in fade-in zoom-in">
-              <CheckCircle2 size={16}/> <span className="text-xs font-bold">Enregistré</span>
+              <CheckCircle2 size={16}/> <span className="text-xs font-bold">{t('profile', 'saved')}</span>
             </div>
           )}
         </div>
@@ -940,8 +1268,8 @@ export default function ProfilePage() {
               <Sparkles size={18} className="text-orange-500 animate-pulse"/>
             </div>
             <p className="text-sm text-orange-800 dark:text-orange-300 font-medium leading-tight">
-              SAMI a détecté de nouvelles informations ! <br/>
-              <span className="text-[11px] opacity-80 italic">Pense à sauvegarder pour confirmer les changements.</span>
+              {t('profile', 'sami_alert')} <br/>
+              <span className="text-[11px] opacity-80 italic">{t('profile', 'sami_hint')}</span>
             </p>
           </div>
         )}
@@ -949,8 +1277,8 @@ export default function ProfilePage() {
         {/* Cards Statistiques */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { icon: BarChart3, val: avgVal > 0 ? `${avgVal}/20` : '—', label: 'Moyenne', color: 'text-orange-500' },
-            { icon: Brain, val: bacVal || '—', label: 'Série BAC', color: 'text-purple-500' },
+            { icon: BarChart3, val: avgVal > 0 ? `${avgVal}/20` : '—', label: t('profile', 'stat_avg'), color: 'text-orange-500' },
+            { icon: Brain, val: bacVal || '—', label: t('profile', 'stat_bac'), color: 'text-purple-500' },
             { icon: Target, val: fitEst ? `${fitEst}%` : '—', label: 'FitScore', color: fitEst && fitEst >= 70 ? 'text-[#005555]' : 'text-orange-400' },
           ].map((card, i) => (
             <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm text-center">
@@ -966,46 +1294,46 @@ export default function ProfilePage() {
           {loading ? (
             <div className="flex flex-col items-center py-20 gap-4 text-slate-400">
               <Loader2 size={32} className="animate-spin text-[#005555]"/>
-              <span className="text-xs font-bold uppercase tracking-widest">Synchronisation...</span>
+              <span className="text-xs font-bold uppercase tracking-widest">{t('profile', 'syncing')}</span>
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               
               {/* Nom Complet */}
               <div className="group">
-                <label className={lbl}>Identité</label>
+                <label className={lbl}>{t('profile', 'label_id')}</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
-                  <input {...register('full_name')} placeholder="Nom et Prénom" className={inp}/>
+                  <User className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]", isRTL ? "right-4" : "left-4")} size={18}/>
+                  <input {...register('full_name')} placeholder={t('profile', 'ph_name')} className={cn(inp, isRTL ? "pr-11 pl-4" : "pl-11 pr-4")}/>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Moyenne */}
                 <div className="group">
-                  <label className={lbl}>Moyenne</label>
+                  <label className={lbl}>{t('profile', 'label_avg')}</label>
                   <div className="relative">
-                    <BarChart3 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
-                    <input type="number" step="0.01" {...register('average')} placeholder="Moyenne / 20" className={inp}/>
+                    <BarChart3 className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]", isRTL ? "right-4" : "left-4")} size={18}/>
+                    <input type="number" step="0.01" {...register('average')} placeholder="Moyenne / 20" className={cn(inp, isRTL ? "pr-11 pl-4" : "pl-11 pr-4")}/>
                   </div>
                 </div>
 
                 {/* Ville */}
                 <div className="group">
-                  <label className={lbl}>Localisation</label>
+                  <label className={lbl}>{t('profile', 'label_loc')}</label>
                   <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
-                    <input {...register('city')} placeholder="Ville" className={inp}/>
+                    <MapPin className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]", isRTL ? "right-4" : "left-4")} size={18}/>
+                    <input {...register('city')} placeholder={t('profile', 'ph_city')} className={cn(inp, isRTL ? "pr-11 pl-4" : "pl-11 pr-4")}/>
                   </div>
                 </div>
               </div>
 
               {/* BAC Type */}
               <div className="group">
-                <label className={lbl}>Diplôme de base</label>
+                <label className={lbl}>{t('profile', 'label_bac')}</label>
                 <div className="relative space-y-3">
                   <div className="relative">
-                    <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
+                    <GraduationCap className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]", isRTL ? "right-4" : "left-4")} size={18}/>
                     <select
                       value={bacLibre ? '__autre__' : (watch('bac_type') || '')}
                       onChange={(e) => {
@@ -1013,9 +1341,9 @@ export default function ProfilePage() {
                         if (val === '__autre__') { setBacLibre(true); setValue('bac_type', ''); }
                         else { setBacLibre(false); setValue('bac_type', val, { shouldDirty: true }); }
                       }}
-                      className={inp}
+                      className={cn(inp, isRTL ? "pr-11 pl-4" : "pl-11 pr-4")}
                     >
-                      <option value="">Choisir ton BAC...</option>
+                      <option value="">{t('profile', 'ph_bac')}</option>
                       <optgroup label="Sciences & Tech">
                         <option value="SMA">Sciences Maths A</option>
                         <option value="SMB">Sciences Maths B</option>
@@ -1033,8 +1361,8 @@ export default function ProfilePage() {
                     <input 
                       {...register('bac_type')} 
                       autoFocus 
-                      placeholder="Précisez votre diplôme..." 
-                      className={cn(inp, "border-orange-200 dark:border-orange-900/50 bg-orange-50/30 dark:bg-orange-900/10")} 
+                      placeholder={t('profile', 'ph_bac_other')} 
+                      className={cn(inp, "border-orange-200 dark:border-orange-900/50 bg-orange-50/30 dark:bg-orange-900/10", isRTL ? "pr-11 pl-4" : "pl-11 pr-4")} 
                     />
                   )}
                 </div>
@@ -1042,19 +1370,19 @@ export default function ProfilePage() {
 
               {/* Niveau Actuel */}
               <div className="group">
-                <label className={lbl}>Situation Actuelle</label>
+                <label className={lbl}>{t('profile', 'label_status')}</label>
                 <div className="relative">
-                  <ClipboardList className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
-                  <input {...register('level')} placeholder="Ex: Terminale, BAC+2..." className={inp}/>
+                  <ClipboardList className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#005555]", isRTL ? "right-4" : "left-4")} size={18}/>
+                  <input {...register('level')} placeholder={t('profile', 'ph_level')} className={cn(inp, isRTL ? "pr-11 pl-4" : "pl-11 pr-4")}/>
                 </div>
               </div>
 
               {/* Intérêts */}
               <div className="group">
-                <label className={lbl}>Passions & Intérêts</label>
+                <label className={lbl}>{t('profile', 'label_interests')}</label>
                 <div className="relative">
-                  <Sparkles className="absolute left-4 top-4 text-slate-400 group-focus-within:text-[#005555]" size={18}/>
-                  <textarea {...register('interests')} rows={3} placeholder="IA, Finance, Développement web..." className={cn(inp, "pl-11 pt-3 resize-none")}/>
+                  <Sparkles className={cn("absolute top-4 text-slate-400 group-focus-within:text-[#005555]", isRTL ? "right-4" : "left-4")} size={18}/>
+                  <textarea {...register('interests')} rows={3} placeholder={t('profile', 'ph_interests')} className={cn(inp, "pt-3 resize-none", isRTL ? "pr-11 pl-4" : "pl-11 pr-4")}/>
                 </div>
               </div>
 
@@ -1066,7 +1394,7 @@ export default function ProfilePage() {
                 className="w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97] hover:opacity-90 shadow-xl shadow-[#005555]/20 disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 size={20} className="animate-spin"/> : <Save size={20}/>}
-                <span>{isDirty ? 'Enregistrer les modifications' : 'Profil à jour'}</span>
+                <span>{isDirty ? t('profile', 'btn_save') : t('profile', 'btn_up_to_date')}</span>
               </button>
             </form>
           )}

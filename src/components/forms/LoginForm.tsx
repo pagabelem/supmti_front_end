@@ -374,6 +374,296 @@
 
 
 
+// 'use client';
+// import { useState } from 'react';
+// import { useForm } from 'react-hook-form';
+// import { zodResolver } from '@hookform/resolvers/zod';
+// import * as z from 'zod';
+// import { useAuthStore } from '@/store/authStore';
+// import { useRouter } from 'next/navigation';
+// import { Mail, Lock, Loader2, AlertCircle, ShieldAlert, Terminal, ArrowRight } from 'lucide-react';
+// import { cn } from '@/lib/utils';
+
+// const loginSchema = z.object({
+//   email: z.string().email('Email invalide'),
+//   password: z.string().min(6, 'Minimum 6 caractères'),
+// });
+
+// type LoginValues = z.infer<typeof loginSchema>;
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const colors = { teal: '#005555', red: '#E31E24' };
+
+// export const LoginForm = ({ isAdminMode = false }: { isAdminMode?: boolean }) => {
+//   const { setAuth } = useAuthStore();
+//   const router = useRouter();
+//   const [apiError, setApiError] = useState<string | null>(null);
+
+//   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({
+//     resolver: zodResolver(loginSchema),
+//   });
+
+//   const onSubmit = async (data: LoginValues) => {
+//     setApiError(null);
+//     try {
+//       const res = await fetch(`${API}/api/auth/login`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(data),
+//       });
+//       const json = await res.json().catch(() => ({}));
+//       if (!res.ok) {
+//         setApiError(json.detail || json.message || 'Identifiants incorrects.');
+//         return;
+//       }
+//       setAuth(json.user ?? json, json.token ?? 'session');
+//       const role = (json.user?.role || '').toLowerCase();
+//       router.push(role === 'admin' ? '/admin/dashboard' : '/dashboard');
+//     } catch {
+//       setApiError(isAdminMode ? 'SYSTEM_OFFLINE' : 'Serveur inaccessible.');
+//     }
+//   };
+
+//   return (
+//     <div className={cn(
+//       "w-full max-w-md mx-auto p-10 rounded-3xl shadow-2xl border transition-all duration-300",
+//       isAdminMode 
+//         ? "bg-black border-emerald-900/30 shadow-emerald-900/10" 
+//         : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
+//     )}>
+      
+//       {!isAdminMode && (
+//         <div className="text-center mb-10">
+//           <img src="/images/logo-supmti.png" alt="Logo" className="h-20 mx-auto dark:brightness-110" />
+//           <div className="w-full flex h-2 rounded-full overflow-hidden mt-6 bg-slate-100 dark:bg-slate-800 shadow-inner">
+//             <div className="h-full w-[35%]" style={{ backgroundColor: colors.red }} />
+//             <div className="h-full w-[65%]" style={{ backgroundColor: colors.teal }} />
+//           </div>
+//         </div>
+//       )}
+
+//       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+//         {apiError && (
+//           <div className={cn(
+//             "flex items-center gap-3 p-4 rounded-xl border animate-in slide-in-from-top-4",
+//             isAdminMode ? "bg-red-950/20 border-red-500/40 text-red-400 font-mono" : "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400"
+//           )}>
+//             {isAdminMode ? <ShieldAlert size={16} /> : <AlertCircle size={20} />}
+//             <p className="text-sm font-semibold">{apiError}</p>
+//           </div>
+//         )}
+
+//         <div className="relative group">
+//           <div className={cn(
+//             "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors",
+//             isAdminMode ? "text-emerald-900 group-focus-within:text-emerald-400" : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
+//           )}>
+//             {isAdminMode ? <Terminal size={18} /> : <Mail size={20} />}
+//           </div>
+//           <input
+//             {...register('email')}
+//             placeholder={isAdminMode ? ":: root_identifier" : "Identifiant ou email"}
+//             className={cn(
+//               "w-full pl-12 pr-4 py-3.5 rounded-2xl border outline-none transition-all",
+//               isAdminMode 
+//                 ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500" 
+//                 : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555]"
+//             )}
+//           />
+//         </div>
+
+//         <div className="relative group">
+//           <div className={cn(
+//             "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors",
+//             isAdminMode ? "text-emerald-900 group-focus-within:text-emerald-400" : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
+//           )}>
+//             <Lock size={20} />
+//           </div>
+//           <input
+//             type="password"
+//             {...register('password')}
+//             placeholder={isAdminMode ? ":: secure_key" : "Mot de passe"}
+//             className={cn(
+//               "w-full pl-12 pr-4 py-3.5 rounded-2xl border outline-none transition-all",
+//               isAdminMode 
+//                 ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500" 
+//                 : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555]"
+//             )}
+//           />
+//         </div>
+
+//         <button
+//           type="submit"
+//           disabled={isSubmitting}
+//           style={!isAdminMode ? { backgroundColor: colors.teal } : {}}
+//           className={cn(
+//             "w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97]",
+//             isAdminMode ? "bg-emerald-600 hover:bg-emerald-500 font-mono tracking-widest" : "hover:opacity-90 shadow-lg shadow-[#005555]/20 dark:shadow-none"
+//           )}
+//         >
+//           {isSubmitting ? <Loader2 size={22} className="animate-spin" /> : <>{isAdminMode ? 'AUTH_EXEC' : 'Se connecter'} <ArrowRight size={20} /></>}
+//         </button>
+
+//         {!isAdminMode && (
+//           <div className="text-center">
+//             <button type="button" className="text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-[#E31E24] transition-colors">
+//               Mot de passe oublié ?
+//             </button>
+//           </div>
+//         )}
+//       </form>
+//     </div>
+//   );
+// };
+
+
+
+// 'use client';
+// import { useState } from 'react';
+// import { useForm } from 'react-hook-form';
+// import { zodResolver } from '@hookform/resolvers/zod';
+// import * as z from 'zod';
+// import { useAuthStore } from '@/store/authStore';
+// import { useRouter } from 'next/navigation';
+// import { Mail, Lock, Loader2, AlertCircle, ShieldAlert, Terminal, ArrowRight } from 'lucide-react';
+// import { cn } from '@/lib/utils';
+// import { useLang } from '@/i18n/LanguageContext';
+
+// const loginSchema = z.object({
+//   email:    z.string().email('Email invalide'),
+//   password: z.string().min(6, 'Minimum 6 caractères'),
+// });
+// type LoginValues = z.infer<typeof loginSchema>;
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const colors = { teal: '#005555', red: '#E31E24' };
+
+// export const LoginForm = ({ isAdminMode = false }: { isAdminMode?: boolean }) => {
+//   const { setAuth } = useAuthStore();
+//   const router = useRouter();
+//   const { t } = useLang();
+//   const [apiError, setApiError] = useState<string | null>(null);
+
+//   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({
+//     resolver: zodResolver(loginSchema),
+//   });
+
+//   const onSubmit = async (data: LoginValues) => {
+//     setApiError(null);
+//     try {
+//       const res = await fetch(`${API}/api/auth/login`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(data),
+//       });
+//       const json = await res.json().catch(() => ({}));
+//       if (!res.ok) { setApiError(json.detail || json.message || t('panels', 'error_connection')); return; }
+//       setAuth(json.user ?? json, json.token ?? 'session');
+//       const role = (json.user?.role || '').toLowerCase();
+//       router.push(role === 'admin' ? '/admin/dashboard' : '/dashboard');
+//     } catch { setApiError(isAdminMode ? 'SYSTEM_OFFLINE' : t('panels', 'error_connection')); }
+//   };
+
+//   return (
+//     <div className={cn(
+//       "w-full max-w-md mx-auto p-10 rounded-3xl shadow-2xl border transition-all duration-300",
+//       isAdminMode
+//         ? "bg-black border-emerald-900/30 shadow-emerald-900/10"
+//         : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
+//     )}>
+
+//       {!isAdminMode && (
+//         <div className="text-center mb-10">
+//           <img src="/images/logo-supmti.png" alt="Logo" className="h-20 mx-auto dark:brightness-110" />
+//           <div className="w-full flex h-2 rounded-full overflow-hidden mt-6 bg-slate-100 dark:bg-slate-800 shadow-inner">
+//             <div className="h-full w-[35%]" style={{ backgroundColor: colors.red }} />
+//             <div className="h-full w-[65%]" style={{ backgroundColor: colors.teal }} />
+//           </div>
+//         </div>
+//       )}
+
+//       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+//         {apiError && (
+//           <div className={cn(
+//             "flex items-center gap-3 p-4 rounded-xl border animate-in slide-in-from-top-4",
+//             isAdminMode
+//               ? "bg-red-950/20 border-red-500/40 text-red-400 font-mono"
+//               : "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400"
+//           )}>
+//             {isAdminMode ? <ShieldAlert size={16} /> : <AlertCircle size={20} />}
+//             <p className="text-sm font-semibold">{apiError}</p>
+//           </div>
+//         )}
+
+//         <div className="relative group">
+//           <div className={cn(
+//             "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors",
+//             isAdminMode ? "text-emerald-900 group-focus-within:text-emerald-400" : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
+//           )}>
+//             {isAdminMode ? <Terminal size={18} /> : <Mail size={20} />}
+//           </div>
+//           <input
+//             {...register('email')}
+//             placeholder={isAdminMode ? ":: root_identifier" : t('auth', 'email')}
+//             className={cn(
+//               "w-full pl-12 pr-4 py-3.5 rounded-2xl border outline-none transition-all",
+//               isAdminMode
+//                 ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500"
+//                 : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555]"
+//             )}
+//           />
+//         </div>
+
+//         <div className="relative group">
+//           <div className={cn(
+//             "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors",
+//             isAdminMode ? "text-emerald-900 group-focus-within:text-emerald-400" : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
+//           )}>
+//             <Lock size={20} />
+//           </div>
+//           <input
+//             type="password"
+//             {...register('password')}
+//             placeholder={isAdminMode ? ":: secure_key" : t('auth', 'password')}
+//             className={cn(
+//               "w-full pl-12 pr-4 py-3.5 rounded-2xl border outline-none transition-all",
+//               isAdminMode
+//                 ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500"
+//                 : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555]"
+//             )}
+//           />
+//         </div>
+
+//         <button
+//           type="submit"
+//           disabled={isSubmitting}
+//           style={!isAdminMode ? { backgroundColor: colors.teal } : {}}
+//           className={cn(
+//             "w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97]",
+//             isAdminMode ? "bg-emerald-600 hover:bg-emerald-500 font-mono tracking-widest" : "hover:opacity-90 shadow-lg shadow-[#005555]/20 dark:shadow-none"
+//           )}
+//         >
+//           {isSubmitting
+//             ? <Loader2 size={22} className="animate-spin" />
+//             : <>{isAdminMode ? 'AUTH_EXEC' : t('auth', 'login')} <ArrowRight size={20} /></>
+//           }
+//         </button>
+
+//         {!isAdminMode && (
+//           <div className="text-center">
+//             <button type="button" className="text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-[#E31E24] transition-colors">
+//               {t('auth', 'password')} ?
+//             </button>
+//           </div>
+//         )}
+//       </form>
+//     </div>
+//   );
+// };
+
+
+
+// src/components/forms/LoginForm.tsx
 'use client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -381,22 +671,24 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Mail, Lock, Loader2, AlertCircle, ShieldAlert, Terminal, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLang } from '@/i18n/LanguageContext';
 
 const loginSchema = z.object({
-  email: z.string().email('Email invalide'),
+  email:    z.string().email('Email invalide'),
   password: z.string().min(6, 'Minimum 6 caractères'),
 });
-
 type LoginValues = z.infer<typeof loginSchema>;
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API    = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 const colors = { teal: '#005555', red: '#E31E24' };
 
 export const LoginForm = ({ isAdminMode = false }: { isAdminMode?: boolean }) => {
   const { setAuth } = useAuthStore();
-  const router = useRouter();
+  const router      = useRouter();
+  const { t }       = useLang();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({
@@ -406,38 +698,35 @@ export const LoginForm = ({ isAdminMode = false }: { isAdminMode?: boolean }) =>
   const onSubmit = async (data: LoginValues) => {
     setApiError(null);
     try {
-      const res = await fetch(`${API}/api/auth/login`, {
-        method: 'POST',
+      const res  = await fetch(`${API}/api/auth/login`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body:    JSON.stringify(data),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setApiError(json.detail || json.message || 'Identifiants incorrects.');
-        return;
-      }
+      if (!res.ok) { setApiError(json.detail || json.message || t('panels', 'error_connection')); return; }
       setAuth(json.user ?? json, json.token ?? 'session');
       const role = (json.user?.role || '').toLowerCase();
       router.push(role === 'admin' ? '/admin/dashboard' : '/dashboard');
     } catch {
-      setApiError(isAdminMode ? 'SYSTEM_OFFLINE' : 'Serveur inaccessible.');
+      setApiError(isAdminMode ? 'SYSTEM_OFFLINE' : t('panels', 'error_connection'));
     }
   };
 
   return (
     <div className={cn(
       "w-full max-w-md mx-auto p-10 rounded-3xl shadow-2xl border transition-all duration-300",
-      isAdminMode 
-        ? "bg-black border-emerald-900/30 shadow-emerald-900/10" 
+      isAdminMode
+        ? "bg-black border-emerald-900/30 shadow-emerald-900/10"
         : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"
     )}>
-      
+
       {!isAdminMode && (
         <div className="text-center mb-10">
           <img src="/images/logo-supmti.png" alt="Logo" className="h-20 mx-auto dark:brightness-110" />
           <div className="w-full flex h-2 rounded-full overflow-hidden mt-6 bg-slate-100 dark:bg-slate-800 shadow-inner">
-            <div className="h-full w-[35%]" style={{ backgroundColor: colors.red }} />
-            <div className="h-full w-[65%]" style={{ backgroundColor: colors.teal }} />
+            <div className="h-full w-[35%]" style={{ backgroundColor: colors.red }}/>
+            <div className="h-full w-[65%]" style={{ backgroundColor: colors.teal }}/>
           </div>
         </div>
       )}
@@ -446,51 +735,73 @@ export const LoginForm = ({ isAdminMode = false }: { isAdminMode?: boolean }) =>
         {apiError && (
           <div className={cn(
             "flex items-center gap-3 p-4 rounded-xl border animate-in slide-in-from-top-4",
-            isAdminMode ? "bg-red-950/20 border-red-500/40 text-red-400 font-mono" : "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400"
+            isAdminMode
+              ? "bg-red-950/20 border-red-500/40 text-red-400 font-mono"
+              : "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400"
           )}>
-            {isAdminMode ? <ShieldAlert size={16} /> : <AlertCircle size={20} />}
+            {isAdminMode ? <ShieldAlert size={16}/> : <AlertCircle size={20}/>}
             <p className="text-sm font-semibold">{apiError}</p>
           </div>
         )}
 
+        {/* Email */}
         <div className="relative group">
           <div className={cn(
             "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors",
-            isAdminMode ? "text-emerald-900 group-focus-within:text-emerald-400" : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
+            isAdminMode
+              ? "text-emerald-900 group-focus-within:text-emerald-400"
+              : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
           )}>
-            {isAdminMode ? <Terminal size={18} /> : <Mail size={20} />}
+            {isAdminMode ? <Terminal size={18}/> : <Mail size={20}/>}
           </div>
           <input
             {...register('email')}
-            placeholder={isAdminMode ? ":: root_identifier" : "Identifiant ou email"}
+            placeholder={isAdminMode ? ":: root_identifier" : t('auth', 'email')}
             className={cn(
               "w-full pl-12 pr-4 py-3.5 rounded-2xl border outline-none transition-all",
-              isAdminMode 
-                ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500" 
+              isAdminMode
+                ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500"
                 : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555]"
             )}
           />
+          {errors.email && <p className="text-xs text-red-500 mt-1 ml-1">{errors.email.message}</p>}
         </div>
 
+        {/* Password */}
         <div className="relative group">
           <div className={cn(
             "absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors",
-            isAdminMode ? "text-emerald-900 group-focus-within:text-emerald-400" : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
+            isAdminMode
+              ? "text-emerald-900 group-focus-within:text-emerald-400"
+              : "text-slate-400 dark:text-slate-500 group-focus-within:text-[#005555]"
           )}>
-            <Lock size={20} />
+            <Lock size={20}/>
           </div>
           <input
             type="password"
             {...register('password')}
-            placeholder={isAdminMode ? ":: secure_key" : "Mot de passe"}
+            placeholder={isAdminMode ? ":: secure_key" : t('auth', 'password')}
             className={cn(
               "w-full pl-12 pr-4 py-3.5 rounded-2xl border outline-none transition-all",
-              isAdminMode 
-                ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500" 
+              isAdminMode
+                ? "bg-zinc-950 border-emerald-900/30 text-emerald-400 font-mono focus:border-emerald-500"
                 : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-[#005555]"
             )}
           />
+          {errors.password && <p className="text-xs text-red-500 mt-1 ml-1">{errors.password.message}</p>}
         </div>
+
+        {/* Mot de passe oublié — uniquement hors mode admin */}
+        {!isAdminMode && (
+          <div className="flex justify-end -mt-2">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-[#E31E24] dark:hover:text-[#E31E24] transition-colors"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
+        )}
 
         <button
           type="submit"
@@ -498,19 +809,16 @@ export const LoginForm = ({ isAdminMode = false }: { isAdminMode?: boolean }) =>
           style={!isAdminMode ? { backgroundColor: colors.teal } : {}}
           className={cn(
             "w-full py-4 rounded-2xl font-black text-white transition-all flex justify-center items-center gap-3 active:scale-[0.97]",
-            isAdminMode ? "bg-emerald-600 hover:bg-emerald-500 font-mono tracking-widest" : "hover:opacity-90 shadow-lg shadow-[#005555]/20 dark:shadow-none"
+            isAdminMode
+              ? "bg-emerald-600 hover:bg-emerald-500 font-mono tracking-widest"
+              : "hover:opacity-90 shadow-lg shadow-[#005555]/20 dark:shadow-none"
           )}
         >
-          {isSubmitting ? <Loader2 size={22} className="animate-spin" /> : <>{isAdminMode ? 'AUTH_EXEC' : 'Se connecter'} <ArrowRight size={20} /></>}
+          {isSubmitting
+            ? <Loader2 size={22} className="animate-spin"/>
+            : <>{isAdminMode ? 'AUTH_EXEC' : t('auth', 'login')} <ArrowRight size={20}/></>
+          }
         </button>
-
-        {!isAdminMode && (
-          <div className="text-center">
-            <button type="button" className="text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-[#E31E24] transition-colors">
-              Mot de passe oublié ?
-            </button>
-          </div>
-        )}
       </form>
     </div>
   );

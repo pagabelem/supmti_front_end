@@ -323,46 +323,261 @@
 //   );
 // };
 
+
+
+
+
+
+
+
+
+// 'use client';
+// import { useState, useEffect } from 'react';
+// import { 
+//   Scale, ArrowRightLeft, Sparkles, AlertTriangle, 
+//   Lightbulb, Loader2, Target, Zap, TrendingUp, 
+//   Globe, Briefcase, Coins, CheckCircle2 
+// } from 'lucide-react';
+// import { getComparer } from '@/services/panelService';
+// import { Spinner, ActionBtn, ResultCard, Prose, ErrorBox } from './ui';
+// import { cn } from '@/lib/utils';
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+// // ── COMPOSANT : JAUGES D'INSERTION ──────────────────────────────
+// const InsertionGauge = ({ label, percent, color }: { label: string, percent: number, color: 'emerald' | 'red' }) => (
+//   <div className="flex-1 p-4 rounded-3xl bg-white dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.05] flex flex-col items-center text-center">
+//     <div className="relative w-16 h-16 mb-3">
+//       <svg className="w-full h-full transform -rotate-90">
+//         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100 dark:text-slate-800" />
+//         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" 
+//           strokeDasharray={175.9} strokeDashoffset={175.9 - (175.9 * percent) / 100}
+//           className={cn("transition-all duration-1000 ease-out", color === 'emerald' ? "text-emerald-500" : "text-red-500")} 
+//         />
+//       </svg>
+//       <span className="absolute inset-0 flex items-center justify-center text-xs font-black">{percent}%</span>
+//     </div>
+//     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{label}</span>
+//     <span className="text-[9px] text-slate-400 mt-1 italic">Taux d'insertion</span>
+//   </div>
+// );
+
+// // ── COMPOSANT : VISUALISEUR DE SALAIRES ─────────────────────────
+// const SalaryVisualizer = ({ f1, f2 }: { f1: string, f2: string }) => {
+//   const rows = [
+//     { period: 'Départ', valA: '7k-12k', valB: '7k-12k', icon: Briefcase, unit: 'MAD' },
+//     { period: '3 ans', valA: '12k-20k', valB: '12k-20k', icon: TrendingUp, unit: 'MAD' },
+//     { period: '7 ans', valA: '20k-40k', valB: '20k-38k', icon: Coins, unit: 'MAD' },
+//     { period: 'International', valA: '4k-7k', valB: '3.5k-5.5k', icon: Globe, unit: 'EUR' },
+//   ];
+
+//   return (
+//     <div className="space-y-4 my-8">
+//       <div className="flex items-center gap-2 mb-6">
+//         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+//         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Grille Salariale</span>
+//         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+//       </div>
+      
+//       {rows.map((row, i) => (
+//         <div key={i} className="group relative">
+//           <div className="flex justify-between items-center mb-1 px-1">
+//              <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">{row.valA} <span className="opacity-50">{row.unit}</span></span>
+//              <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+//                 <row.icon size={10} />
+//                 <span className="text-[8px] font-bold uppercase tracking-widest">{row.period}</span>
+//              </div>
+//              <span className="text-[9px] font-black text-red-600 dark:text-red-400">{row.valB} <span className="opacity-50">{row.unit}</span></span>
+//           </div>
+//           <div className="grid grid-cols-2 gap-1 h-2">
+//             <div className="bg-emerald-500/10 rounded-l-full overflow-hidden">
+//               <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: i === 2 ? '100%' : '85%' }} />
+//             </div>
+//             <div className="bg-red-500/10 rounded-r-full overflow-hidden flex justify-end">
+//               <div className="h-full bg-red-500 transition-all duration-1000" style={{ width: i === 2 ? '92%' : '85%' }} />
+//             </div>
+//           </div>
+//         </div>
+//       ))}
+//     </div>
+//   );
+// };
+
+// // ── COMPOSANT : SELECTEUR ───────────────────────────────────────
+// const SelectField = ({ label, value, onChange, filieres, loadingFilieres, side = 'left' }: any) => (
+//   <div className="flex-1 group">
+//     <label className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-3 block px-1", side === 'left' ? "text-emerald-600" : "text-red-600")}>
+//       {label}
+//     </label>
+//     <div className="relative">
+//       <select
+//         value={value}
+//         onChange={e => onChange(e.target.value)}
+//         className={cn(
+//           "w-full h-[58px] bg-white dark:bg-slate-900 border-2 rounded-2xl px-5 text-sm font-black outline-none appearance-none transition-all",
+//           side === 'left' ? "border-emerald-50 focus:border-emerald-500" : "border-red-50 focus:border-red-500"
+//         )}
+//       >
+//         {filieres.map((f: any) => (
+//           <option key={f.id} value={f.id}>{f.id} — {f.niveau}</option>
+//         ))}
+//       </select>
+//       <Target size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+//     </div>
+//   </div>
+// );
+
+// export const ComparerPanel = () => {
+//   const [filieres, setFilieres] = useState<FiliereInfo[]>([]);
+//   const [loadingFilieres, setLoadingFilieres] = useState(true);
+//   const [f1, setF1] = useState('');
+//   const [f2, setF2] = useState('');
+//   const [loading, setLoading] = useState(false);
+//   const [result, setResult] = useState<any>(null);
+//   const [error, setError] = useState<string | null>(null);
+
+//   useEffect(() => {
+//     fetch(`${API}/api/filieres/accessibles`, { credentials: 'include' })
+//       .then(r => r.json())
+//       .then(data => {
+//         const list = data.filieres || [];
+//         setFilieres(list);
+//         if (list.length >= 2) { setF1(list[0].id); setF2(list[1].id); }
+//       })
+//       .finally(() => setLoadingFilieres(false));
+//   }, []);
+
+//   const compare = async () => {
+//     setLoading(true); setError(null);
+//     try {
+//       const data = await getComparer(f1, f2);
+//       setResult(data);
+//     } catch { setError('Erreur de chargement.'); }
+//     setLoading(false);
+//   };
+
+//   return (
+//     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in pb-10">
+      
+//       {/* Header */}
+//       <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-white/[0.03] border border-slate-100 flex items-center gap-4">
+//         <div className="p-3 rounded-2xl bg-[#006666] text-white shadow-lg shadow-[#006666]/20">
+//           <Scale size={24} />
+//         </div>
+//         <div>
+//           <h3 className="text-sm font-black uppercase tracking-tighter">Comparateur de Carrières</h3>
+//           <p className="text-[11px] text-slate-500 italic">Analyse comparative des débouchés SUPMTI.</p>
+//         </div>
+//       </div>
+
+//       {/* Selectors */}
+//       <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-end gap-4">
+//         <SelectField label="Option A" value={f1} onChange={setF1} filieres={filieres} loadingFilieres={loadingFilieres} side="left" />
+//         <div className="hidden md:flex flex-col items-center justify-center mb-1">
+//           <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg font-black text-[10px]">VS</div>
+//         </div>
+//         <SelectField label="Option B" value={f2} onChange={setF2} filieres={filieres} loadingFilieres={loadingFilieres} side="right" />
+//       </div>
+
+//       <ActionBtn onClick={compare} disabled={loading || filieres.length < 2} className="h-16 bg-slate-900 hover:bg-black text-white rounded-2xl font-black">
+//         {loading ? <Loader2 className="animate-spin mr-2" /> : <Zap size={18} className="mr-2 fill-current" />}
+//         {loading ? "Analyse en cours..." : "Lancer le duel"}
+//       </ActionBtn>
+
+//       {/* Results Rendering */}
+//       {!loading && result && (
+//         <div className="space-y-8 animate-in slide-in-from-bottom-4">
+          
+//           {/* 1. Visual Salaries */}
+//           <div className="relative">
+//             <SalaryVisualizer f1={f1} f2={f2} />
+//           </div>
+
+//           {/* 2. Insertion Gauges */}
+//           <div className="grid grid-cols-2 gap-4">
+//              <InsertionGauge label={f1} percent={92} color="emerald" />
+//              <InsertionGauge label={f2} percent={90} color="red" />
+//           </div>
+
+//           {/* 3. Detailed Report */}
+//           <div className="relative">
+//              <div className="absolute -top-3 left-6 px-3 py-1 bg-[#006666] text-white text-[9px] font-black rounded-lg z-10 shadow-md uppercase tracking-widest">
+//                 Rapport d'Expertise
+//              </div>
+//              <ResultCard className="pt-10 pb-8 px-8 bg-white dark:bg-slate-900 border-2 border-slate-100 rounded-[2.5rem] shadow-xl">
+//                 <Prose content={result.comparaison} />
+//              </ResultCard>
+//           </div>
+
+//           {/* 4. SAMI Recommendation */}
+//           {result.recommandation && (
+//             <div className="relative group">
+//               <div className="absolute inset-0 bg-emerald-500 rounded-[2.5rem] blur opacity-10" />
+//               <ResultCard accent className="relative border-none bg-emerald-50/50 dark:bg-emerald-950/20 p-8 rounded-[2.5rem]">
+//                 <div className="flex items-center gap-4 mb-4">
+//                   <div className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg">
+//                     <Sparkles size={18} />
+//                   </div>
+//                   <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Arbitrage SAMI IA</h4>
+//                 </div>
+//                 <Prose content={result.recommandation} className="text-emerald-900 dark:text-emerald-50 font-medium" />
+//               </ResultCard>
+//             </div>
+//           )}
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================================
+// ComparerPanel.tsx — avec i18n
+// ============================================================
 'use client';
 import { useState, useEffect } from 'react';
-import { 
-  Scale, ArrowRightLeft, Sparkles, AlertTriangle, 
-  Lightbulb, Loader2, Target, Zap, TrendingUp, 
-  Globe, Briefcase, Coins, CheckCircle2 
-} from 'lucide-react';
+import { Scale, Sparkles, Loader2, Target, Zap, TrendingUp, Globe, Briefcase, Coins } from 'lucide-react';
 import { getComparer } from '@/services/panelService';
-import { Spinner, ActionBtn, ResultCard, Prose, ErrorBox } from './ui';
+import { ActionBtn, ResultCard, Prose, ErrorBox } from './ui';
+import { useLang } from '@/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
-// ── COMPOSANT : JAUGES D'INSERTION ──────────────────────────────
-const InsertionGauge = ({ label, percent, color }: { label: string, percent: number, color: 'emerald' | 'red' }) => (
+interface FiliereInfo { id: string; nom: string; niveau: string; }
+
+const InsertionGauge = ({ label, percent, color }: { label: string; percent: number; color: 'emerald' | 'red' }) => (
   <div className="flex-1 p-4 rounded-3xl bg-white dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.05] flex flex-col items-center text-center">
     <div className="relative w-16 h-16 mb-3">
       <svg className="w-full h-full transform -rotate-90">
         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100 dark:text-slate-800" />
-        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" 
+        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent"
           strokeDasharray={175.9} strokeDashoffset={175.9 - (175.9 * percent) / 100}
-          className={cn("transition-all duration-1000 ease-out", color === 'emerald' ? "text-emerald-500" : "text-red-500")} 
-        />
+          className={cn("transition-all duration-1000 ease-out", color === 'emerald' ? "text-emerald-500" : "text-red-500")} />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-xs font-black">{percent}%</span>
     </div>
     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{label}</span>
-    <span className="text-[9px] text-slate-400 mt-1 italic">Taux d'insertion</span>
   </div>
 );
 
-// ── COMPOSANT : VISUALISEUR DE SALAIRES ─────────────────────────
-const SalaryVisualizer = ({ f1, f2 }: { f1: string, f2: string }) => {
+const SalaryVisualizer = ({ f1, f2, labels }: { f1: string; f2: string; labels: { start: string; y3: string; y7: string; intl: string } }) => {
   const rows = [
-    { period: 'Départ', valA: '7k-12k', valB: '7k-12k', icon: Briefcase, unit: 'MAD' },
-    { period: '3 ans', valA: '12k-20k', valB: '12k-20k', icon: TrendingUp, unit: 'MAD' },
-    { period: '7 ans', valA: '20k-40k', valB: '20k-38k', icon: Coins, unit: 'MAD' },
-    { period: 'International', valA: '4k-7k', valB: '3.5k-5.5k', icon: Globe, unit: 'EUR' },
+    { period: labels.start, valA: '7k-12k',  valB: '7k-12k',  icon: Briefcase,  unit: 'MAD' },
+    { period: labels.y3,    valA: '12k-20k', valB: '12k-20k', icon: TrendingUp, unit: 'MAD' },
+    { period: labels.y7,    valA: '20k-40k', valB: '20k-38k', icon: Coins,       unit: 'MAD' },
+    { period: labels.intl,  valA: '4k-7k',   valB: '3.5k-5.5k', icon: Globe,    unit: 'EUR' },
   ];
-
   return (
     <div className="space-y-4 my-8">
       <div className="flex items-center gap-2 mb-6">
@@ -370,16 +585,14 @@ const SalaryVisualizer = ({ f1, f2 }: { f1: string, f2: string }) => {
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Grille Salariale</span>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
       </div>
-      
       {rows.map((row, i) => (
         <div key={i} className="group relative">
           <div className="flex justify-between items-center mb-1 px-1">
-             <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">{row.valA} <span className="opacity-50">{row.unit}</span></span>
-             <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                <row.icon size={10} />
-                <span className="text-[8px] font-bold uppercase tracking-widest">{row.period}</span>
-             </div>
-             <span className="text-[9px] font-black text-red-600 dark:text-red-400">{row.valB} <span className="opacity-50">{row.unit}</span></span>
+            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">{row.valA} <span className="opacity-50">{row.unit}</span></span>
+            <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+              <row.icon size={10} /><span className="text-[8px] font-bold uppercase tracking-widest">{row.period}</span>
+            </div>
+            <span className="text-[9px] font-black text-red-600 dark:text-red-400">{row.valB} <span className="opacity-50">{row.unit}</span></span>
           </div>
           <div className="grid grid-cols-2 gap-1 h-2">
             <div className="bg-emerald-500/10 rounded-l-full overflow-hidden">
@@ -395,21 +608,16 @@ const SalaryVisualizer = ({ f1, f2 }: { f1: string, f2: string }) => {
   );
 };
 
-// ── COMPOSANT : SELECTEUR ───────────────────────────────────────
-const SelectField = ({ label, value, onChange, filieres, loadingFilieres, side = 'left' }: any) => (
+const SelectField = ({ label, value, onChange, filieres, side = 'left' }: any) => (
   <div className="flex-1 group">
     <label className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-3 block px-1", side === 'left' ? "text-emerald-600" : "text-red-600")}>
       {label}
     </label>
     <div className="relative">
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className={cn(
-          "w-full h-[58px] bg-white dark:bg-slate-900 border-2 rounded-2xl px-5 text-sm font-black outline-none appearance-none transition-all",
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className={cn("w-full h-[58px] bg-white dark:bg-slate-900 border-2 rounded-2xl px-5 text-sm font-black outline-none appearance-none transition-all",
           side === 'left' ? "border-emerald-50 focus:border-emerald-500" : "border-red-50 focus:border-red-500"
-        )}
-      >
+        )}>
         {filieres.map((f: any) => (
           <option key={f.id} value={f.id}>{f.id} — {f.niveau}</option>
         ))}
@@ -420,13 +628,14 @@ const SelectField = ({ label, value, onChange, filieres, loadingFilieres, side =
 );
 
 export const ComparerPanel = () => {
-  const [filieres, setFilieres] = useState<FiliereInfo[]>([]);
+  const { t } = useLang();
+  const [filieres,       setFilieres]       = useState<FiliereInfo[]>([]);
   const [loadingFilieres, setLoadingFilieres] = useState(true);
-  const [f1, setF1] = useState('');
-  const [f2, setF2] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [f1, setF1]   = useState('');
+  const [f2, setF2]   = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [result,   setResult]   = useState<any>(null);
+  const [error,    setError]    = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${API}/api/filieres/accessibles`, { credentials: 'include' })
@@ -441,76 +650,70 @@ export const ComparerPanel = () => {
 
   const compare = async () => {
     setLoading(true); setError(null);
-    try {
-      const data = await getComparer(f1, f2);
-      setResult(data);
-    } catch { setError('Erreur de chargement.'); }
+    try { const data = await getComparer(f1, f2); setResult(data); }
+    catch { setError(t('comparer','error_load')); }
     setLoading(false);
+  };
+
+  const salaryLabels = {
+    start: t('comparer','salary_start'),
+    y3:    t('comparer','salary_3'),
+    y7:    t('comparer','salary_7'),
+    intl:  t('comparer','salary_intl'),
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in pb-10">
-      
+
       {/* Header */}
       <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-white/[0.03] border border-slate-100 flex items-center gap-4">
         <div className="p-3 rounded-2xl bg-[#006666] text-white shadow-lg shadow-[#006666]/20">
           <Scale size={24} />
         </div>
         <div>
-          <h3 className="text-sm font-black uppercase tracking-tighter">Comparateur de Carrières</h3>
-          <p className="text-[11px] text-slate-500 italic">Analyse comparative des débouchés SUPMTI.</p>
+          <h3 className="text-sm font-black uppercase tracking-tighter">{t('comparer','header_title')}</h3>
+          <p className="text-[11px] text-slate-500 italic">{t('comparer','header_desc')}</p>
         </div>
       </div>
 
       {/* Selectors */}
       <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-end gap-4">
-        <SelectField label="Option A" value={f1} onChange={setF1} filieres={filieres} loadingFilieres={loadingFilieres} side="left" />
+        <SelectField label={t('comparer','option_a')} value={f1} onChange={setF1} filieres={filieres} side="left" />
         <div className="hidden md:flex flex-col items-center justify-center mb-1">
           <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-lg font-black text-[10px]">VS</div>
         </div>
-        <SelectField label="Option B" value={f2} onChange={setF2} filieres={filieres} loadingFilieres={loadingFilieres} side="right" />
+        <SelectField label={t('comparer','option_b')} value={f2} onChange={setF2} filieres={filieres} side="right" />
       </div>
 
       <ActionBtn onClick={compare} disabled={loading || filieres.length < 2} className="h-16 bg-slate-900 hover:bg-black text-white rounded-2xl font-black">
         {loading ? <Loader2 className="animate-spin mr-2" /> : <Zap size={18} className="mr-2 fill-current" />}
-        {loading ? "Analyse en cours..." : "Lancer le duel"}
+        {loading ? t('comparer','btn_loading') : t('comparer','btn_duel')}
       </ActionBtn>
 
-      {/* Results Rendering */}
+      {error && <ErrorBox message={error} />}
+
       {!loading && result && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4">
-          
-          {/* 1. Visual Salaries */}
-          <div className="relative">
-            <SalaryVisualizer f1={f1} f2={f2} />
-          </div>
-
-          {/* 2. Insertion Gauges */}
+          <SalaryVisualizer f1={f1} f2={f2} labels={salaryLabels} />
           <div className="grid grid-cols-2 gap-4">
-             <InsertionGauge label={f1} percent={92} color="emerald" />
-             <InsertionGauge label={f2} percent={90} color="red" />
+            <InsertionGauge label={f1} percent={92} color="emerald" />
+            <InsertionGauge label={f2} percent={90} color="red" />
           </div>
-
-          {/* 3. Detailed Report */}
           <div className="relative">
-             <div className="absolute -top-3 left-6 px-3 py-1 bg-[#006666] text-white text-[9px] font-black rounded-lg z-10 shadow-md uppercase tracking-widest">
-                Rapport d'Expertise
-             </div>
-             <ResultCard className="pt-10 pb-8 px-8 bg-white dark:bg-slate-900 border-2 border-slate-100 rounded-[2.5rem] shadow-xl">
-                <Prose content={result.comparaison} />
-             </ResultCard>
+            <div className="absolute -top-3 left-6 px-3 py-1 bg-[#006666] text-white text-[9px] font-black rounded-lg z-10 shadow-md uppercase tracking-widest">
+              {t('comparer','report_label')}
+            </div>
+            <ResultCard className="pt-10 pb-8 px-8 bg-white dark:bg-slate-900 border-2 border-slate-100 rounded-[2.5rem] shadow-xl">
+              <Prose content={result.comparaison} />
+            </ResultCard>
           </div>
-
-          {/* 4. SAMI Recommendation */}
           {result.recommandation && (
             <div className="relative group">
               <div className="absolute inset-0 bg-emerald-500 rounded-[2.5rem] blur opacity-10" />
               <ResultCard accent className="relative border-none bg-emerald-50/50 dark:bg-emerald-950/20 p-8 rounded-[2.5rem]">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg">
-                    <Sparkles size={18} />
-                  </div>
-                  <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Arbitrage SAMI IA</h4>
+                  <div className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg"><Sparkles size={18} /></div>
+                  <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{t('comparer','sami_arb')}</h4>
                 </div>
                 <Prose content={result.recommandation} className="text-emerald-900 dark:text-emerald-50 font-medium" />
               </ResultCard>

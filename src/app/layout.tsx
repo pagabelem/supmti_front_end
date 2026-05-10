@@ -16,13 +16,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className="antialiased transition-colors duration-300">
-        <ThemeProvider>
-          <AdminLayoutWrapper>
-            <LanguageProvider>
-            {children}
-            </LanguageProvider>
-          </AdminLayoutWrapper>
-        </ThemeProvider>
+        <LanguageProvider>
+  <ThemeProvider>
+    <AdminLayoutWrapper>
+      {children}
+    </AdminLayoutWrapper>
+  </ThemeProvider>
+</LanguageProvider>
       </body>
     </html>
   );

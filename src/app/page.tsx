@@ -228,6 +228,265 @@
 // }
 
 
+// 'use client';
+// import Link from 'next/link';
+// import { useState, useEffect, useRef } from 'react';
+// import { useRouter } from 'next/navigation';
+// import {
+//   Bot, UserCircle, GraduationCap, Sparkles, ChevronRight,
+//   BarChart3, Brain, Users, Zap, Star, ArrowRight,
+//   Code2, Network, BarChart, Globe, Shield, Cpu, Briefcase, Landmark
+// } from 'lucide-react';
+
+// // ── COMPOSANTS UTILITAIRES ────────────────────────────────────
+
+// function Counter({ end, suffix = '', duration = 2000 }: { end: number; suffix?: string; duration?: number }) {
+//   const [count, setCount] = useState(0);
+//   const [started, setStarted] = useState(false);
+//   useEffect(() => {
+//     const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setStarted(true); }, { threshold: 0.5 });
+//     const el = document.getElementById(`counter-${end}`);
+//     if (el) observer.observe(el);
+//     return () => observer.disconnect();
+//   }, [end]);
+
+//   useEffect(() => {
+//     if (!started) return;
+//     let start = 0;
+//     const increment = end / (duration / 16);
+//     const timer = setInterval(() => {
+//       start += increment;
+//       if (start >= end) { setCount(end); clearInterval(timer); }
+//       else setCount(Math.floor(start));
+//     }, 16);
+//     return () => clearInterval(timer);
+//   }, [started, end, duration]);
+//   return <span id={`counter-${end}`}>{count}{suffix}</span>;
+// }
+
+// // ── DONNÉES ──────────────────────────────────────────────────
+
+// const STATS = [
+//   { value: 7, suffix: '', label: "Filières d'excellence", icon: GraduationCap },
+//   { value: 500, suffix: '+', label: 'Étudiants orientés', icon: Users },
+//   { value: 98, suffix: '%', label: 'Taux de satisfaction', icon: Star },
+//   { value: 3, suffix: 'x', label: "Plus rapide qu'un conseiller", icon: Zap },
+// ];
+
+// const DEPARTEMENTS = [
+//   {
+//     nom: "Management & Finance",
+//     color: "#CC0000",
+//     filières: [
+//       { id: 'MGE', nom: "Management de l'Entreprise", level: 'BAC+3', icon: BarChart, desc: 'Pilotage, Marketing & Stratégie' },
+//       { id: 'MDI', nom: 'Management et Dév. International', level: 'BAC+3', icon: Globe, desc: 'Commerce global & Import-Export' },
+//       { id: 'FACG', nom: 'Finance, Audit et Contrôle de Gestion', level: 'BAC+5', icon: Shield, desc: 'Expertise financière & Audit' },
+//       { id: 'MRI', nom: 'Management et Relations Internationales', level: 'BAC+5', icon: Landmark, desc: 'Diplomatie & Stratégie mondiale' },
+//     ]
+//   },
+//   {
+//     nom: "Ingénierie (ISI)",
+//     color: "#006666",
+//     filières: [
+//       { id: 'IISI', nom: 'Ing. Intelligente des Systèmes Info', level: 'BAC+3', icon: Code2, desc: 'Développement Web & IA' },
+//       { id: 'IISIC', nom: "Ing. Intelligente des Systèmes d'Info", level: 'BAC+5', icon: Brain, desc: 'Architecture SI & Data Science' },
+//       { id: 'IISRT', nom: 'Ing. Intelligente Réseaux & Télécoms', level: 'BAC+5', icon: Network, desc: 'Cybersécurité & Cloud' },
+//     ]
+//   }
+// ];
+
+// const FEATURES = [
+//   { icon: BarChart3, titre: 'FitScore™', desc: 'Calcul de compatibilité basé sur ton profil psychométrique.', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+//   { icon: Brain, titre: 'Test Psycho', desc: 'Révèle tes forces cognitives et ta personnalité académique.', color: 'text-red-600', bg: 'bg-red-500/10' },
+//   { icon: Cpu, titre: 'RAG Knowledge', desc: 'Base de connaissance SUPMTI interrogeable en temps réel.', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+//   { icon: Users, titre: 'Peer Match', desc: 'Mise en relation avec des ambassadeurs étudiants.', color: 'text-red-600', bg: 'bg-red-500/10' },
+//   { icon: Zap, titre: 'Coach Académique', desc: "Plan d'action personnalisé et ressources recommandées.", color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+//   { icon: Globe, titre: 'Simulation Carrière', desc: 'Projection de ta carrière sur le marché marocain.', color: 'text-red-600', bg: 'bg-red-500/10' },
+// ];
+
+// export default function Home() {
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const handleKeyDown = (e: KeyboardEvent) => {
+//       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+//         e.preventDefault();
+//         router.push('/login');
+//       }
+//     };
+//     window.addEventListener('keydown', handleKeyDown);
+//     return () => window.removeEventListener('keydown', handleKeyDown);
+//   }, [router]);
+
+//   return (
+//     <div className="bg-white dark:bg-[#020617] text-slate-900 dark:text-white transition-colors duration-300">
+      
+//       {/* ── HERO SECTION ── */}
+//       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden">
+//         <div className="absolute inset-0 z-0">
+//           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#006666]/10 rounded-full blur-[120px] animate-pulse" />
+//           <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#CC0000]/5 rounded-full blur-[120px]" />
+//         </div>
+
+//         <div className="relative z-10 text-center max-w-5xl mx-auto">
+//           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+//             <Sparkles size={14} className="text-[#006666] animate-pulse" />
+//             <span className="text-[10px] font-black tracking-[0.2em] uppercase">SAMI v2.0 • IA Orientation SUPMTI</span>
+//           </div>
+
+//           <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[0.9] tracking-tighter">
+//             Ton futur est <br />
+//             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#006666] to-[#CC0000]">déjà écrit.</span>
+//           </h1>
+
+//           <p className="text-slate-500 dark:text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-12">
+//             L'intelligence artificielle qui décode ton potentiel pour t'orienter vers les métiers de demain à SUPMTI Meknès.
+//           </p>
+
+//           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+//             <Link href="/login" className="group flex items-center justify-center gap-3 bg-[#006666] text-white px-10 py-5 rounded-2xl font-black text-lg hover:shadow-2xl hover:shadow-[#006666]/40 transition-all hover:-translate-y-1">
+//               <UserCircle size={22} /> Calculer mon FitScore
+//               <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+//             </Link>
+//             <Link href="/chatbot" className="flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 px-10 py-5 rounded-2xl font-black text-lg hover:border-[#CC0000] transition-all">
+//               <Bot size={22} /> Essayer SAMI
+//             </Link>
+//           </div>
+//         </div>
+//       </section>
+
+//       {/* ── STATS SECTION ── */}
+//       <section className="py-20 border-y border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-950/50">
+//         <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
+//           {STATS.map(({ value, suffix, label, icon: Icon }) => (
+//             <div key={label} className="text-center group">
+//               <div className="inline-flex p-4 rounded-2xl bg-white dark:bg-slate-900 shadow-sm mb-4 group-hover:scale-110 transition-transform">
+//                 <Icon size={24} className="text-[#006666]" />
+//               </div>
+//               <div className="text-4xl font-black mb-1 italic">
+//                 <Counter end={value} suffix={suffix} />
+//               </div>
+//               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+//             </div>
+//           ))}
+//         </div>
+//       </section>
+
+//       {/* ── CAROUSEL FEATURES ── */}
+//       <section className="py-24 overflow-hidden">
+//         <div className="text-center mb-16">
+//           <h2 className="text-3xl font-black uppercase tracking-tighter">Technologie d'Orientation</h2>
+//         </div>
+//         <div className="flex animate-marquee space-x-6 whitespace-nowrap">
+//           {[...FEATURES, ...FEATURES].map((f, i) => (
+//             <div key={i} className="inline-block w-[300px] p-8 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0">
+//               <div className={`w-12 h-12 ${f.bg} rounded-xl flex items-center justify-center mb-6`}>
+//                 <f.icon size={22} className={f.color} />
+//               </div>
+//               <h3 className="text-xl font-black mb-2 whitespace-normal">{f.titre}</h3>
+//               <p className="text-sm text-slate-500 whitespace-normal leading-relaxed">{f.desc}</p>
+//             </div>
+//           ))}
+//         </div>
+        
+//         <style jsx global>{`
+//           @keyframes marquee {
+//             0% { transform: translateX(0); }
+//             100% { transform: translateX(-50%); }
+//           }
+//           .animate-marquee {
+//             animation: marquee 30s linear infinite;
+//           }
+//           .animate-marquee:hover {
+//             animation-play-state: paused;
+//           }
+//         `}</style>
+//       </section>
+
+//       {/* ── FILIÈRES (LES 7 FILIÈRES) ── */}
+//       <section className="py-32 px-6 bg-slate-50 dark:bg-slate-900/20">
+//         <div className="max-w-7xl mx-auto">
+//           <div className="text-center mb-24">
+//             <span className="text-[#CC0000] font-black uppercase tracking-[0.3em] text-[10px]">Parcours Académiques</span>
+//             <h2 className="text-5xl md:text-6xl font-black tracking-tighter mt-4 italic">7 Filières, 2 Départements.</h2>
+//           </div>
+
+//           <div className="space-y-32">
+//             {DEPARTEMENTS.map((dept) => (
+//               <div key={dept.nom}>
+//                 <div className="flex items-center gap-4 mb-12 border-b-4 border-slate-900 dark:border-white pb-4">
+//                    <h3 className="text-3xl font-black uppercase tracking-tighter">{dept.nom}</h3>
+//                    <div className="flex-1 h-[2px] bg-slate-100 dark:bg-slate-800" />
+//                 </div>
+
+//                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+//                   {dept.filières.map((f) => (
+//                     <div 
+//                       key={f.id} 
+//                       className="group relative bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all hover:-translate-y-2"
+//                     >
+//                       {/* Glow Effect */}
+//                       <div 
+//                         className="absolute -top-24 -right-24 w-48 h-48 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500" 
+//                         style={{ backgroundColor: dept.color, filter: 'blur(40px)' }}
+//                       />
+                      
+//                       <div className="relative z-10">
+//                         <div className="flex justify-between items-start mb-8">
+//                           <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-900 dark:text-white group-hover:scale-110 transition-transform">
+//                             <f.icon size={26} style={{ color: dept.color }} />
+//                           </div>
+//                           <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
+//                             {f.level}
+//                           </span>
+//                         </div>
+                        
+//                         <div className="mb-8">
+//                           <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: dept.color }}>{f.id}</p>
+//                           <h4 className="text-xl font-black leading-[1.1] group-hover:underline decoration-2 underline-offset-4">{f.nom}</h4>
+//                         </div>
+                        
+//                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">{f.desc}</p>
+                        
+//                         <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
+//                           Détails <ArrowRight size={16} style={{ color: dept.color }} />
+//                         </button>
+//                       </div>
+//                     </div>
+//                   ))}
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       </section>
+
+//       {/* ── FOOTER ── */}
+//       <footer className="py-20 px-6 border-t border-slate-100 dark:border-slate-900">
+//         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+//           <div className="flex flex-col items-center md:items-start gap-4">
+//              <div className="text-2xl font-black tracking-tighter">SUPMTI <span className="text-[#CC0000]">MEKNÈS</span></div>
+//              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">© 2026 SAMI PROJECT • ALL RIGHTS RESERVED</p>
+//           </div>
+
+//           <div className="flex gap-12">
+//             {['RAG Engine', 'Vector DB', 'NextJS 14'].map(t => (
+//               <span key={t} className="text-[10px] font-black text-slate-300 dark:text-slate-800 uppercase tracking-widest italic">{t}</span>
+//             ))}
+//           </div>
+
+//           <Link href="/login" className="flex items-center gap-3 text-[10px] font-mono text-slate-400 hover:text-[#006666] transition-colors group">
+//             <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800 group-hover:bg-[#006666] animate-pulse" />
+//             SECURE_ACCESS_ADMIN
+//           </Link>
+//         </div>
+//       </footer>
+//     </div>
+//   );
+// }
+
+
+
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
@@ -237,6 +496,7 @@ import {
   BarChart3, Brain, Users, Zap, Star, ArrowRight,
   Code2, Network, BarChart, Globe, Shield, Cpu, Briefcase, Landmark
 } from 'lucide-react';
+import { useLang } from '@/i18n/LanguageContext';
 
 // ── COMPOSANTS UTILITAIRES ────────────────────────────────────
 
@@ -266,46 +526,47 @@ function Counter({ end, suffix = '', duration = 2000 }: { end: number; suffix?: 
 
 // ── DONNÉES ──────────────────────────────────────────────────
 
-const STATS = [
-  { value: 7, suffix: '', label: "Filières d'excellence", icon: GraduationCap },
-  { value: 500, suffix: '+', label: 'Étudiants orientés', icon: Users },
-  { value: 98, suffix: '%', label: 'Taux de satisfaction', icon: Star },
-  { value: 3, suffix: 'x', label: "Plus rapide qu'un conseiller", icon: Zap },
-];
-
 const DEPARTEMENTS = [
   {
     nom: "Management & Finance",
     color: "#CC0000",
     filières: [
-      { id: 'MGE', nom: "Management de l'Entreprise", level: 'BAC+3', icon: BarChart, desc: 'Pilotage, Marketing & Stratégie' },
-      { id: 'MDI', nom: 'Management et Dév. International', level: 'BAC+3', icon: Globe, desc: 'Commerce global & Import-Export' },
-      { id: 'FACG', nom: 'Finance, Audit et Contrôle de Gestion', level: 'BAC+5', icon: Shield, desc: 'Expertise financière & Audit' },
-      { id: 'MRI', nom: 'Management et Relations Internationales', level: 'BAC+5', icon: Landmark, desc: 'Diplomatie & Stratégie mondiale' },
+      { id: 'MGE',  icon: BarChart,   level: 'BAC+3', nom_fr: "Management de l'Entreprise",                nom_en: "Business Management",                     nom_ar: "إدارة الأعمال",         desc_fr: 'Pilotage, Marketing & Stratégie',   desc_en: 'Management, Marketing & Strategy',    desc_ar: 'الإدارة والتسويق والاستراتيجية' },
+      { id: 'MDI',  icon: Globe,      level: 'BAC+3', nom_fr: 'Management et Dév. International',          nom_en: 'Management & International Development',  nom_ar: 'إدارة التنمية الدولية', desc_fr: 'Commerce global & Import-Export',   desc_en: 'Global Trade & Import-Export',        desc_ar: 'التجارة العالمية والاستيراد والتصدير' },
+      { id: 'FACG', icon: Shield,     level: 'BAC+5', nom_fr: 'Finance, Audit et Contrôle de Gestion',    nom_en: 'Finance, Audit & Management Control',     nom_ar: 'المالية والتدقيق',      desc_fr: 'Expertise financière & Audit',      desc_en: 'Financial expertise & Audit',         desc_ar: 'الخبرة المالية والتدقيق' },
+      { id: 'MRI',  icon: Landmark,   level: 'BAC+5', nom_fr: 'Management et Relations Internationales',  nom_en: 'Management & International Relations',    nom_ar: 'الإدارة والعلاقات الدولية', desc_fr: 'Diplomatie & Stratégie mondiale', desc_en: 'Diplomacy & Global Strategy',        desc_ar: 'الدبلوماسية والاستراتيجية العالمية' },
     ]
   },
   {
     nom: "Ingénierie (ISI)",
     color: "#006666",
     filières: [
-      { id: 'IISI', nom: 'Ing. Intelligente des Systèmes Info', level: 'BAC+3', icon: Code2, desc: 'Développement Web & IA' },
-      { id: 'IISIC', nom: "Ing. Intelligente des Systèmes d'Info", level: 'BAC+5', icon: Brain, desc: 'Architecture SI & Data Science' },
-      { id: 'IISRT', nom: 'Ing. Intelligente Réseaux & Télécoms', level: 'BAC+5', icon: Network, desc: 'Cybersécurité & Cloud' },
+      { id: 'IISI',  icon: Code2,    level: 'BAC+3', nom_fr: 'Ing. Intelligente des Systèmes Info',      nom_en: 'Intelligent Information Systems Eng.',    nom_ar: 'هندسة أنظمة المعلومات',  desc_fr: 'Développement Web & IA',           desc_en: 'Web Development & AI',               desc_ar: 'تطوير الويب والذكاء الاصطناعي' },
+      { id: 'IISIC', icon: Brain,    level: 'BAC+5', nom_fr: "Ing. Intelligente des Systèmes d'Info",   nom_en: "Intelligent Information Systems Eng.",    nom_ar: 'هندسة أنظمة المعلومات',  desc_fr: 'Architecture SI & Data Science',   desc_en: 'IS Architecture & Data Science',     desc_ar: 'هندسة الأنظمة وعلم البيانات' },
+      { id: 'IISRT', icon: Network,  level: 'BAC+5', nom_fr: 'Ing. Intelligente Réseaux & Télécoms',    nom_en: 'Intelligent Networks & Telecoms Eng.',    nom_ar: 'هندسة الشبكات والاتصالات', desc_fr: 'Cybersécurité & Cloud',           desc_en: 'Cybersecurity & Cloud',              desc_ar: 'الأمن السيبراني والحوسبة السحابية' },
     ]
   }
 ];
 
-const FEATURES = [
-  { icon: BarChart3, titre: 'FitScore™', desc: 'Calcul de compatibilité basé sur ton profil psychométrique.', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-  { icon: Brain, titre: 'Test Psycho', desc: 'Révèle tes forces cognitives et ta personnalité académique.', color: 'text-red-600', bg: 'bg-red-500/10' },
-  { icon: Cpu, titre: 'RAG Knowledge', desc: 'Base de connaissance SUPMTI interrogeable en temps réel.', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-  { icon: Users, titre: 'Peer Match', desc: 'Mise en relation avec des ambassadeurs étudiants.', color: 'text-red-600', bg: 'bg-red-500/10' },
-  { icon: Zap, titre: 'Coach Académique', desc: "Plan d'action personnalisé et ressources recommandées.", color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-  { icon: Globe, titre: 'Simulation Carrière', desc: 'Projection de ta carrière sur le marché marocain.', color: 'text-red-600', bg: 'bg-red-500/10' },
-];
-
 export default function Home() {
   const router = useRouter();
+  const { t, lang } = useLang();
+
+  const FEATURES = [
+    { icon: BarChart3, titre: 'FitScore™',       desc: lang === 'ar' ? 'حساب التوافق بناءً على ملفك النفسي.' : lang === 'en' ? 'Compatibility score based on your psychometric profile.' : 'Calcul de compatibilité basé sur ton profil psychométrique.', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+    { icon: Brain,     titre: t('nav','psycho'),  desc: lang === 'ar' ? 'اكتشف نقاط قوتك المعرفية وشخصيتك الأكاديمية.' : lang === 'en' ? 'Reveal your cognitive strengths and academic personality.' : 'Révèle tes forces cognitives et ta personnalité académique.', color: 'text-red-600', bg: 'bg-red-500/10' },
+    { icon: Cpu,       titre: 'RAG Knowledge',    desc: lang === 'ar' ? 'قاعدة معرفية SUPMTI قابلة للاستعلام في الوقت الفعلي.' : lang === 'en' ? 'SUPMTI knowledge base queryable in real time.' : 'Base de connaissance SUPMTI interrogeable en temps réel.', color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+    { icon: Users,     titre: t('nav','peermatch'), desc: lang === 'ar' ? 'التواصل مع الطلاب السفراء.' : lang === 'en' ? 'Connect with student ambassadors.' : 'Mise en relation avec des ambassadeurs étudiants.', color: 'text-red-600', bg: 'bg-red-500/10' },
+    { icon: Zap,       titre: t('nav','coach'),   desc: lang === 'ar' ? 'خطة عمل شخصية وموارد موصى بها.' : lang === 'en' ? 'Personalized action plan and recommended resources.' : "Plan d'action personnalisé et ressources recommandées.", color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+    { icon: Globe,     titre: t('nav','carriere'), desc: lang === 'ar' ? 'إسقاط مسيرتك المهنية في السوق المغربية.' : lang === 'en' ? 'Project your career in the Moroccan market.' : 'Projection de ta carrière sur le marché marocain.', color: 'text-red-600', bg: 'bg-red-500/10' },
+  ];
+
+  const STATS = [
+    { value: 7,   suffix: '', label: t('landing','stats_filieres'), icon: GraduationCap },
+    { value: 500, suffix: '+', label: t('landing','stats_students'), icon: Users },
+    { value: 98,  suffix: '%', label: t('landing','stats_satisf'),  icon: Star },
+    { value: 3,   suffix: 'x', label: t('landing','stats_faster'),  icon: Zap },
+  ];
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -331,25 +592,25 @@ export default function Home() {
         <div className="relative z-10 text-center max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
             <Sparkles size={14} className="text-[#006666] animate-pulse" />
-            <span className="text-[10px] font-black tracking-[0.2em] uppercase">SAMI v2.0 • IA Orientation SUPMTI</span>
+            <span className="text-[10px] font-black tracking-[0.2em] uppercase">{t('landing','badge')}</span>
           </div>
 
           <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[0.9] tracking-tighter">
-            Ton futur est <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#006666] to-[#CC0000]">déjà écrit.</span>
+            {t('landing','hero_title_1')} <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#006666] to-[#CC0000]">{t('landing','hero_title_2')}</span>
           </h1>
 
           <p className="text-slate-500 dark:text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-12">
-            L'intelligence artificielle qui décode ton potentiel pour t'orienter vers les métiers de demain à SUPMTI Meknès.
+            {t('landing','hero_subtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login" className="group flex items-center justify-center gap-3 bg-[#006666] text-white px-10 py-5 rounded-2xl font-black text-lg hover:shadow-2xl hover:shadow-[#006666]/40 transition-all hover:-translate-y-1">
-              <UserCircle size={22} /> Calculer mon FitScore
+              <UserCircle size={22} /> {t('landing','cta_fitscore')}
               <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link href="/chatbot" className="flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 px-10 py-5 rounded-2xl font-black text-lg hover:border-[#CC0000] transition-all">
-              <Bot size={22} /> Essayer SAMI
+              <Bot size={22} /> {t('landing','cta_try_sami')}
             </Link>
           </div>
         </div>
@@ -375,7 +636,7 @@ export default function Home() {
       {/* ── CAROUSEL FEATURES ── */}
       <section className="py-24 overflow-hidden">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-black uppercase tracking-tighter">Technologie d'Orientation</h2>
+          <h2 className="text-3xl font-black uppercase tracking-tighter">{t('landing','tech_title')}</h2>
         </div>
         <div className="flex animate-marquee space-x-6 whitespace-nowrap">
           {[...FEATURES, ...FEATURES].map((f, i) => (
@@ -403,12 +664,12 @@ export default function Home() {
         `}</style>
       </section>
 
-      {/* ── FILIÈRES (LES 7 FILIÈRES) ── */}
+      {/* ── FILIÈRES ── */}
       <section className="py-32 px-6 bg-slate-50 dark:bg-slate-900/20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
-            <span className="text-[#CC0000] font-black uppercase tracking-[0.3em] text-[10px]">Parcours Académiques</span>
-            <h2 className="text-5xl md:text-6xl font-black tracking-tighter mt-4 italic">7 Filières, 2 Départements.</h2>
+            <span className="text-[#CC0000] font-black uppercase tracking-[0.3em] text-[10px]">{t('landing','programs_label')}</span>
+            <h2 className="text-5xl md:text-6xl font-black tracking-tighter mt-4 italic">{t('landing','programs_title')}</h2>
           </div>
 
           <div className="space-y-32">
@@ -420,40 +681,47 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {dept.filières.map((f) => (
-                    <div 
-                      key={f.id} 
-                      className="group relative bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all hover:-translate-y-2"
-                    >
-                      {/* Glow Effect */}
+                  {dept.filières.map((f) => {
+                    const nomKey   = `nom_${lang}`   as 'nom_fr' | 'nom_en' | 'nom_ar';
+                    const descKey  = `desc_${lang}`  as 'desc_fr' | 'desc_en' | 'desc_ar';
+                    return (
                       <div 
-                        className="absolute -top-24 -right-24 w-48 h-48 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500" 
-                        style={{ backgroundColor: dept.color, filter: 'blur(40px)' }}
-                      />
-                      
-                      <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-8">
-                          <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-900 dark:text-white group-hover:scale-110 transition-transform">
-                            <f.icon size={26} style={{ color: dept.color }} />
+                        key={f.id} 
+                        className="group relative bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all hover:-translate-y-2"
+                      >
+                        <div 
+                          className="absolute -top-24 -right-24 w-48 h-48 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500" 
+                          style={{ backgroundColor: dept.color, filter: 'blur(40px)' }}
+                        />
+                        
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-start mb-8">
+                            <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <f.icon size={26} style={{ color: dept.color }} />
+                            </div>
+                            <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
+                              {f.level}
+                            </span>
                           </div>
-                          <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
-                            {f.level}
-                          </span>
+                          
+                          <div className="mb-8">
+                            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: dept.color }}>{f.id}</p>
+                            <h4 className="text-xl font-black leading-[1.1] group-hover:underline decoration-2 underline-offset-4">
+                              {f[nomKey] || f.nom_fr}
+                            </h4>
+                          </div>
+                          
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
+                            {f[descKey] || f.desc_fr}
+                          </p>
+                          
+                          <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
+                            {lang === 'ar' ? 'التفاصيل' : lang === 'en' ? 'Details' : 'Détails'} <ArrowRight size={16} style={{ color: dept.color }} />
+                          </button>
                         </div>
-                        
-                        <div className="mb-8">
-                          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: dept.color }}>{f.id}</p>
-                          <h4 className="text-xl font-black leading-[1.1] group-hover:underline decoration-2 underline-offset-4">{f.nom}</h4>
-                        </div>
-                        
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">{f.desc}</p>
-                        
-                        <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group-hover:gap-4 transition-all">
-                          Détails <ArrowRight size={16} style={{ color: dept.color }} />
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -466,18 +734,18 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
           <div className="flex flex-col items-center md:items-start gap-4">
              <div className="text-2xl font-black tracking-tighter">SUPMTI <span className="text-[#CC0000]">MEKNÈS</span></div>
-             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">© 2026 SAMI PROJECT • ALL RIGHTS RESERVED</p>
+             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">{t('landing','footer_copy')}</p>
           </div>
 
           <div className="flex gap-12">
-            {['RAG Engine', 'Vector DB', 'NextJS 14'].map(t => (
-              <span key={t} className="text-[10px] font-black text-slate-300 dark:text-slate-800 uppercase tracking-widest italic">{t}</span>
+            {['RAG Engine', 'Vector DB', 'NextJS 14'].map(item => (
+              <span key={item} className="text-[10px] font-black text-slate-300 dark:text-slate-800 uppercase tracking-widest italic">{item}</span>
             ))}
           </div>
 
           <Link href="/login" className="flex items-center gap-3 text-[10px] font-mono text-slate-400 hover:text-[#006666] transition-colors group">
             <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800 group-hover:bg-[#006666] animate-pulse" />
-            SECURE_ACCESS_ADMIN
+            {t('landing','secure_access')}
           </Link>
         </div>
       </footer>

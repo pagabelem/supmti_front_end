@@ -2053,9 +2053,943 @@
 
 
 
+// 'use client';
+// import { useState, useRef, useEffect } from 'react';
+// import { Send, Mic, MicOff, X, Zap, Loader2, Edit3 } from 'lucide-react';
+// import { cn } from '@/lib/utils';
+// import { v4 as uuidv4 } from 'uuid';
+// import { createPortal } from 'react-dom';
+
+// import chatbotService    from '@/services/chatbotService';
+// import { LiveModeModal } from './LiveModeModal';
+// import { useChatStore }    from '@/store/chatStore';
+// import { useSessionStore } from '@/store/sessionStore';
+// import { usePanelStore }   from '@/store/panelStore';
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+// function getUserId(): string {
+//   try { return JSON.parse(localStorage.getItem('supmti-auth') || '{}')?.state?.user?.id || ''; }
+//   catch { return ''; }
+// }
+
+// async function persistProfilEnDB(profil: Record<string, unknown>) {
+//   const userId = getUserId();
+//   if (!userId) return;
+//   try {
+//     const info  = (profil.informations_personnelles as any) || {};
+//     const acad  = (profil.parcours_academique       as any) || {};
+//     const pref  = (profil.preferences               as any) || {};
+//     const payload: Record<string, unknown> = { user_id: userId };
+//     if (info.prenom && info.prenom !== 'Étudiant')
+//       payload.full_name = info.nom ? `${info.prenom} ${info.nom}`.trim() : info.prenom;
+//     if (acad.moyenne_generale && Number(acad.moyenne_generale) > 0) payload.average  = acad.moyenne_generale;
+//     if (acad.type_bac && acad.type_bac !== 'AUTRE')                 payload.bac_type = acad.label_bac || acad.type_bac;
+//     if (acad.niveau_actuel)    payload.level = acad.niveau_actuel;
+//     else if (acad.diplome_actuel) payload.level = acad.diplome_actuel;
+//     if (info.ville) payload.city = info.ville;
+//     const interets = pref.centres_interet;
+//     if (Array.isArray(interets) && interets.length > 0) payload.interests = interets;
+//     const hasData = ['full_name','average','bac_type','level','city','interests'].some(k => payload[k] !== undefined);
+//     if (!hasData) return;
+//     await fetch(`${API}/api/profil`, {
+//       method: 'PUT', credentials: 'include',
+//       headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
+//       body: JSON.stringify(payload),
+//     });
+//     console.log('[CHAT→DB] Profil persisté');
+//   } catch (e) { console.warn('[CHAT→DB]', e); }
+// }
+
+// // Durée du compte à rebours avant envoi automatique (en secondes)
+// const AUTO_SEND_DELAY = 3;
+
+// export default function ChatInput() {
+//   const [input,               setInput]               = useState('');
+//   const [isRecording,         setIsRecording]         = useState(false);
+//   const [recordingTime,       setRecordingTime]       = useState(0);
+//   const [audioUrl,            setAudioUrl]            = useState<string | null>(null);
+//   const [isTranscribing,      setIsTranscribing]      = useState(false);
+//   const [transcribedText,     setTranscribedText]     = useState('');
+//   // Compte à rebours avant envoi auto (null = pas actif)
+//   const [autoSendCountdown,   setAutoSendCountdown]   = useState<number | null>(null);
+//   // true = l'étudiant a modifié la transcription → envoi manuel uniquement
+//   const [isManualMode,        setIsManualMode]        = useState(false);
+//   const [liveOpen,            setLiveOpen]            = useState(false);
+
+//   const mediaRecRef          = useRef<MediaRecorder | null>(null);
+//   const chunksRef            = useRef<BlobPart[]>([]);
+//   const timerRef             = useRef<NodeJS.Timeout | null>(null);
+//   const autoSendTimerRef     = useRef<NodeJS.Timeout | null>(null);
+//   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+//   const textareaRef          = useRef<HTMLTextAreaElement>(null);
+
+//   const { addMessage, setTyping, isTyping } = useChatStore();
+//   const { setProfil }                        = useSessionStore();
+//   const { setPeerBadge }                     = usePanelStore();
+
+//   // Auto-resize textarea
+//   useEffect(() => {
+//     const el = textareaRef.current;
+//     if (!el) return;
+//     el.style.height = 'auto';
+//     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+//   }, [input]);
+
+//   // Suggestions
+//   useEffect(() => {
+//     const handler = (e: Event) => {
+//       const msg = (e as CustomEvent<string>).detail;
+//       if (msg) sendText(msg);
+//     };
+//     window.addEventListener('sami:suggestion', handler);
+//     return () => window.removeEventListener('sami:suggestion', handler);
+//   }, [isTyping]); // eslint-disable-line
+
+//   // Chrono enregistrement
+//   useEffect(() => {
+//     if (isRecording) { timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000); }
+//     else             { if (timerRef.current) clearInterval(timerRef.current); setRecordingTime(0); }
+//     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+//   }, [isRecording]);
+
+//   // Nettoyage des timers au démontage
+//   useEffect(() => {
+//     return () => {
+//       clearAutoSendTimers();
+//     };
+//   }, []);
+
+//   // ── Helpers timers ────────────────────────────────────────
+//   const clearAutoSendTimers = () => {
+//     if (autoSendTimerRef.current) {
+//       clearTimeout(autoSendTimerRef.current);
+//       autoSendTimerRef.current = null;
+//     }
+//     if (countdownIntervalRef.current) {
+//       clearInterval(countdownIntervalRef.current);
+//       countdownIntervalRef.current = null;
+//     }
+//   };
+
+//   // ── Enregistrement vocal ──────────────────────────────────
+//   const startRecording = async () => {
+//     try {
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+//       chunksRef.current = [];
+//       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+//       const mr = new MediaRecorder(stream, { mimeType: mime });
+//       mediaRecRef.current = mr;
+//       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+//       mr.onstop = async () => {
+//         stream.getTracks().forEach(t => t.stop());
+//         const blob = new Blob(chunksRef.current, { type: mime });
+//         const url  = URL.createObjectURL(blob);
+//         setAudioUrl(url);
+//         setIsRecording(false);
+//         // Réinitialiser les états avant transcription
+//         setTranscribedText('');
+//         setIsManualMode(false);
+//         setAutoSendCountdown(null);
+//         await transcribeToField(blob);
+//       };
+//       mr.start();
+//       setIsRecording(true);
+//       setTranscribedText('');
+//       setAudioUrl(null);
+//       setIsManualMode(false);
+//     } catch { alert("Impossible d'accéder au microphone."); }
+//   };
+
+//   const stopRecording = () => {
+//     if (mediaRecRef.current?.state === 'recording') mediaRecRef.current.stop();
+//   };
+
+//   // ── Transcription → remplit le champ + auto-send ─────────
+//   const transcribeToField = async (blob: Blob) => {
+//     if (blob.size < 600) return;
+//     setIsTranscribing(true);
+//     try {
+//       const fd = new FormData();
+//       fd.append('audio', blob, 'voice.webm');
+//       fd.append('lang', 'fr');
+//       const res  = await fetch(`${API}/api/voice/transcribe`, { method: 'POST', credentials: 'include', body: fd });
+//       const data = await res.json();
+//       if (!data.no_speech && data.text?.trim()) {
+//         const text = data.text.trim();
+//         setTranscribedText(text);
+//         setInput(text);
+//         setTimeout(() => textareaRef.current?.focus(), 100);
+
+//         // ── Démarrer le compte à rebours pour envoi automatique ──
+//         let remaining = AUTO_SEND_DELAY;
+//         setAutoSendCountdown(remaining);
+
+//         countdownIntervalRef.current = setInterval(() => {
+//           remaining -= 1;
+//           setAutoSendCountdown(remaining);
+//           if (remaining <= 0 && countdownIntervalRef.current) {
+//             clearInterval(countdownIntervalRef.current);
+//             countdownIntervalRef.current = null;
+//           }
+//         }, 1000);
+
+//         // Timer principal : envoi après AUTO_SEND_DELAY secondes
+//         autoSendTimerRef.current = setTimeout(() => {
+//           setAutoSendCountdown(null);
+//           setTranscribedText('');
+//           // Lire la valeur courante de l'input via le ref du textarea
+//           const currentText = textareaRef.current?.value || text;
+//           sendText(currentText);
+//         }, AUTO_SEND_DELAY * 1000);
+//       }
+//     } catch { console.warn('[TRANSCRIBE]'); }
+//     finally { setIsTranscribing(false); }
+//   };
+
+//   // ── L'étudiant modifie le texte transcrit → annuler auto-send ──
+//   const handleTranscriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+//     // Annuler les timers d'envoi automatique
+//     clearAutoSendTimers();
+//     setAutoSendCountdown(null);
+//     setIsManualMode(true); // passer en mode manuel
+//     setInput(e.target.value);
+//   };
+
+//   // ── Annuler tout (audio + transcription + auto-send) ──────
+//   const cancelAudio = () => {
+//     clearAutoSendTimers();
+//     setAutoSendCountdown(null);
+//     setIsManualMode(false);
+//     if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); }
+//     setTranscribedText('');
+//     setInput('');
+//   };
+
+//   // ── Envoi du message ──────────────────────────────────────
+//   const sendText = async (text: string) => {
+//     if (!text.trim() || isTyping) return;
+//     // Annuler les timers si envoi manuel pendant le countdown
+//     clearAutoSendTimers();
+//     setAutoSendCountdown(null);
+//     setIsManualMode(false);
+//     setInput('');
+//     setTranscribedText('');
+//     if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); }
+//     addMessage({ id: uuidv4(), content: text, sender: 'user', created_at: new Date().toISOString() });
+//     setTyping(true);
+//     try {
+//       const data = await chatbotService.sendMessage(text);
+//       addMessage({ id: uuidv4(), content: data.reponse || data.response || '', sender: 'ai', created_at: new Date().toISOString() });
+//       if (data.profil) {
+//         setProfil(data.profil as Parameters<typeof setProfil>[0]);
+//         await persistProfilEnDB(data.profil as Record<string, unknown>);
+//         window.dispatchEvent(new CustomEvent('sami:profile-updated'));
+//       }
+//       if (data.peer_match) setPeerBadge(true);
+//     } catch {
+//       addMessage({ id: uuidv4(), content: '⚠️ Erreur. Réessaie.', sender: 'ai', created_at: new Date().toISOString() });
+//     } finally { setTyping(false); }
+//   };
+
+//   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+//   const canSend    = (input.trim().length > 0) && !isTyping && !isRecording && !isTranscribing;
+
+//   // ── Indicateur visuel du countdown (arc SVG) ─────────────
+//   const CountdownRing = ({ value }: { value: number }) => {
+//     const r = 10;
+//     const circ = 2 * Math.PI * r;
+//     const progress = (value / AUTO_SEND_DELAY) * circ;
+//     return (
+//       <svg width="28" height="28" viewBox="0 0 28 28" className="rotate-[-90deg]">
+//         <circle cx="14" cy="14" r={r} fill="none" stroke="#fed7aa" strokeWidth="3" />
+//         <circle
+//           cx="14" cy="14" r={r} fill="none"
+//           stroke="#f97316" strokeWidth="3"
+//           strokeDasharray={`${progress} ${circ}`}
+//           strokeLinecap="round"
+//           style={{ transition: 'stroke-dasharray 0.9s linear' }}
+//         />
+//       </svg>
+//     );
+//   };
+
+//   return (
+//     <>
+//       {liveOpen && typeof document !== 'undefined' &&
+//         createPortal(<LiveModeModal onClose={() => setLiveOpen(false)} />, document.body)
+//       }
+
+//       <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-6 bg-gradient-to-t from-white dark:from-slate-900 via-white/80 dark:via-slate-900/80 to-transparent">
+//         <div className="max-w-4xl mx-auto space-y-2">
+
+//           {/* ── Preview Audio + Transcription ─────────────── */}
+//           {(audioUrl || isTranscribing || transcribedText) && (
+//             <div className="flex flex-col gap-2 p-3 bg-white dark:bg-slate-800 border border-[#006666]/20 dark:border-emerald-700/20 rounded-2xl shadow-sm animate-in slide-in-from-bottom-2 duration-200">
+
+//               {/* Lecteur audio */}
+//               {audioUrl && !isTranscribing && (
+//                 <div className="flex items-center gap-3">
+//                   <audio controls src={audioUrl} className="flex-1 h-8" style={{ minWidth: 0 }} />
+//                   <button
+//                     onClick={cancelAudio}
+//                     className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+//                   >
+//                     <X size={15} />
+//                   </button>
+//                 </div>
+//               )}
+
+//               {/* Indicateur transcription */}
+//               {isTranscribing && (
+//                 <div className="flex items-center gap-2 text-[12px] text-orange-500 dark:text-orange-400">
+//                   <Loader2 size={13} className="animate-spin shrink-0" />
+//                   <span>Transcription en cours…</span>
+//                 </div>
+//               )}
+
+//               {/* Texte transcrit + compte à rebours */}
+//               {transcribedText && !isTranscribing && (
+//                 <div className="flex items-start gap-2">
+//                   <Edit3 size={13} className="text-[#006666] shrink-0 mt-1" />
+//                   <div className="flex-1 min-w-0">
+
+//                     {/* En-tête : label + état (countdown ou mode manuel) */}
+//                     <div className="flex items-center justify-between mb-1.5 gap-2">
+//                       <p className="text-[10px] text-[#006666] font-bold uppercase tracking-widest shrink-0">
+//                         {isManualMode ? 'Modifie et envoie :' : 'Transcrit — modifie si besoin :'}
+//                       </p>
+
+//                       {!isManualMode && autoSendCountdown !== null ? (
+//                         /* ── Compte à rebours actif ── */
+//                         <div className="flex items-center gap-1.5 shrink-0">
+//                           <div className="relative flex items-center justify-center">
+//                             <CountdownRing value={autoSendCountdown} />
+//                             <span className="absolute text-[9px] font-black text-orange-500">
+//                               {autoSendCountdown}
+//                             </span>
+//                           </div>
+//                           <span className="text-[10px] text-orange-500 font-semibold">
+//                             envoi auto…
+//                           </span>
+//                           <button
+//                             onClick={cancelAudio}
+//                             className="text-[9px] font-bold text-red-400 hover:text-red-600 underline underline-offset-2 transition-colors ml-0.5"
+//                           >
+//                             Annuler
+//                           </button>
+//                         </div>
+//                       ) : isManualMode ? (
+//                         /* ── Mode manuel après modification ── */
+//                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
+//                           <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+//                           Prêt — clique sur Envoyer ↗
+//                         </span>
+//                       ) : null}
+//                     </div>
+
+//                     {/* Textarea éditable */}
+//                     <textarea
+//                       value={input}
+//                       onChange={handleTranscriptChange}
+//                       rows={2}
+//                       className={cn(
+//                         'w-full text-sm bg-slate-50 dark:bg-slate-700 border rounded-xl px-3 py-2',
+//                         'text-slate-800 dark:text-slate-100 resize-none outline-none transition-colors',
+//                         isManualMode
+//                           ? 'border-[#006666] ring-1 ring-[#006666]/20'
+//                           : 'border-slate-200 dark:border-slate-600 focus:border-[#006666]'
+//                       )}
+//                       placeholder="Modifie le texte ici…"
+//                     />
+
+//                     {/* Indication subtile */}
+//                     {!isManualMode && autoSendCountdown !== null && (
+//                       <p className="text-[9px] text-gray-400 mt-1">
+//                         💡 Commence à modifier pour annuler l'envoi automatique
+//                       </p>
+//                     )}
+//                   </div>
+//                 </div>
+//               )}
+//             </div>
+//           )}
+
+//           {/* ── Barre principale ─────────────────────────── */}
+//           <div className={cn(
+//             'relative bg-white dark:bg-slate-800 border-2 rounded-[24px] shadow-xl transition-all duration-300',
+//             isRecording
+//               ? 'border-red-400/50 ring-4 ring-red-500/5'
+//               : 'border-gray-100 dark:border-slate-700 focus-within:border-[#006666]/30 focus-within:shadow-2xl'
+//           )}>
+//             <div className="flex items-end gap-2 px-4 py-3">
+
+//               {/* Textarea principal ou état enregistrement */}
+//               {!isRecording ? (
+//                 <textarea
+//                   ref={textareaRef}
+//                   value={input}
+//                   onChange={e => {
+//                     // Si on modifie directement le champ principal pendant le countdown
+//                     if (autoSendCountdown !== null && !isManualMode) {
+//                       clearAutoSendTimers();
+//                       setAutoSendCountdown(null);
+//                       setIsManualMode(true);
+//                     }
+//                     setInput(e.target.value);
+//                   }}
+//                   onKeyDown={e => {
+//                     if (e.key === 'Enter' && !e.shiftKey) {
+//                       e.preventDefault();
+//                       sendText(input);
+//                     }
+//                   }}
+//                   placeholder={isTranscribing ? 'Transcription…' : 'Pose ta question à SAMI…'}
+//                   disabled={isTranscribing}
+//                   rows={1}
+//                   className="flex-1 resize-none bg-transparent border-none outline-none text-[15px] py-2.5 max-h-[160px] text-gray-800 dark:text-slate-100 placeholder:text-gray-400"
+//                 />
+//               ) : (
+//                 <div className="flex-1 flex items-center gap-4 py-3 px-2">
+//                   <div className="flex items-center gap-2">
+//                     <span className="relative flex h-3 w-3">
+//                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+//                       <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" />
+//                     </span>
+//                     <span className="text-sm font-mono font-bold text-red-600">{formatTime(recordingTime)}</span>
+//                   </div>
+//                   <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+//                     <div className="h-full bg-gradient-to-r from-red-400 to-red-600 animate-pulse w-full rounded-full" />
+//                   </div>
+//                   <button
+//                     onClick={stopRecording}
+//                     className="text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded-lg transition-colors"
+//                   >
+//                     Arrêter
+//                   </button>
+//                 </div>
+//               )}
+
+//               {/* Boutons droite */}
+//               <div className="flex items-center gap-1.5 mb-1">
+
+//                 {/* Bouton LIVE */}
+//                 <button
+//                   type="button"
+//                   onClick={() => setLiveOpen(true)}
+//                   title="Mode Live — conversation vocale temps réel"
+//                   className="relative p-2.5 rounded-full bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 ring-1 ring-orange-500/20 hover:ring-orange-500/40 transition-all"
+//                 >
+//                   <Zap size={18} className="fill-orange-500" />
+//                   <span className="absolute top-1 right-1 flex h-2 w-2">
+//                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-60" />
+//                     <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+//                   </span>
+//                 </button>
+
+//                 {/* Micro */}
+//                 {!isRecording ? (
+//                   <button
+//                     type="button"
+//                     onClick={startRecording}
+//                     disabled={isTranscribing}
+//                     title="Enregistrer — transcription affichée avant envoi automatique"
+//                     className="p-2.5 text-gray-400 hover:text-[#006666] hover:bg-emerald-50 dark:hover:bg-emerald-900/10 rounded-full transition-all disabled:opacity-40"
+//                   >
+//                     <Mic size={22} />
+//                   </button>
+//                 ) : (
+//                   <button
+//                     type="button"
+//                     onClick={stopRecording}
+//                     className="p-2.5 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-full transition-all animate-pulse"
+//                   >
+//                     <MicOff size={22} />
+//                   </button>
+//                 )}
+
+//                 {/* Envoyer */}
+//                 <button
+//                   type="button"
+//                   onClick={() => sendText(input)}
+//                   disabled={!canSend}
+//                   className={cn(
+//                     'w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300',
+//                     canSend
+//                       ? 'bg-[#006666] text-white shadow-lg shadow-emerald-900/20 hover:scale-105 hover:shadow-xl'
+//                       : 'bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-600 cursor-not-allowed'
+//                   )}
+//                 >
+//                   {isTyping
+//                     ? <Loader2 size={18} className="animate-spin" />
+//                     : autoSendCountdown !== null && !isManualMode
+//                       /* Mini ring dans le bouton Send pendant le countdown */
+//                       ? (
+//                         <div className="relative flex items-center justify-center w-5 h-5">
+//                           <svg width="20" height="20" viewBox="0 0 20 20" className="absolute rotate-[-90deg]">
+//                             <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+//                             <circle
+//                               cx="10" cy="10" r="8" fill="none"
+//                               stroke="currentColor" strokeWidth="2"
+//                               strokeDasharray={`${(autoSendCountdown / AUTO_SEND_DELAY) * 50.3} 50.3`}
+//                               strokeLinecap="round"
+//                               style={{ transition: 'stroke-dasharray 0.9s linear' }}
+//                             />
+//                           </svg>
+//                           <Send size={12} />
+//                         </div>
+//                       )
+//                       : <Send size={18} />
+//                   }
+//                 </button>
+//               </div>
+//             </div>
+
+//             {/* Hint bas */}
+//             <div className="px-5 pb-2.5 flex items-center gap-3">
+//               <button
+//                 onClick={() => setLiveOpen(true)}
+//                 className="text-[10px] text-orange-400/60 hover:text-orange-400 transition-colors flex items-center gap-1"
+//               >
+//                 <Zap size={9} className="fill-current" /> Mode Live — parler directement à SAMI
+//               </button>
+//               <span className="text-[10px] text-gray-300 dark:text-slate-600">·</span>
+//               <span className="text-[10px] text-gray-400">
+//                 🎤 Micro → envoi auto dans {AUTO_SEND_DELAY}s · modifie pour annuler
+//               </span>
+//             </div>
+
+//             {/* Barre déco */}
+//             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-[3px] flex rounded-b-full overflow-hidden">
+//               <div className="flex-1 bg-[#006666]" />
+//               <div className="flex-1 bg-[#CC0000]" />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// }
+
+
+
+// 'use client';
+// import { useState, useRef, useEffect } from 'react';
+// import { Send, Mic, MicOff, X, Zap, Loader2, Edit3 } from 'lucide-react';
+// import { cn } from '@/lib/utils';
+// import { v4 as uuidv4 } from 'uuid';
+// import { createPortal } from 'react-dom';
+
+// import chatbotService    from '@/services/chatbotService';
+// import { LiveModeModal } from './LiveModeModal';
+// import { useChatStore }    from '@/store/chatStore';
+// import { useSessionStore } from '@/store/sessionStore';
+// import { usePanelStore }   from '@/store/panelStore';
+// import { useLang }         from '@/i18n/LanguageContext';
+
+// const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+// function getUserId(): string {
+//   try { return JSON.parse(localStorage.getItem('supmti-auth') || '{}')?.state?.user?.id || ''; }
+//   catch { return ''; }
+// }
+
+// async function persistProfilEnDB(profil: Record<string, unknown>) {
+//   const userId = getUserId();
+//   if (!userId) return;
+//   try {
+//     const info  = (profil.informations_personnelles as any) || {};
+//     const acad  = (profil.parcours_academique       as any) || {};
+//     const pref  = (profil.preferences               as any) || {};
+//     const payload: Record<string, unknown> = { user_id: userId };
+//     if (info.prenom && info.prenom !== 'Étudiant')
+//       payload.full_name = info.nom ? `${info.prenom} ${info.nom}`.trim() : info.prenom;
+//     if (acad.moyenne_generale && Number(acad.moyenne_generale) > 0) payload.average  = acad.moyenne_generale;
+//     if (acad.type_bac && acad.type_bac !== 'AUTRE')                 payload.bac_type = acad.label_bac || acad.type_bac;
+//     if (acad.niveau_actuel)    payload.level = acad.niveau_actuel;
+//     else if (acad.diplome_actuel) payload.level = acad.diplome_actuel;
+//     if (info.ville) payload.city = info.ville;
+//     const interets = pref.centres_interet;
+//     if (Array.isArray(interets) && interets.length > 0) payload.interests = interets;
+//     const hasData = ['full_name','average','bac_type','level','city','interests'].some(k => payload[k] !== undefined);
+//     if (!hasData) return;
+//     await fetch(`${API}/api/profil`, {
+//       method: 'PUT', credentials: 'include',
+//       headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
+//       body: JSON.stringify(payload),
+//     });
+//     console.log('[CHAT→DB] Profil persisté');
+//   } catch (e) { console.warn('[CHAT→DB]', e); }
+// }
+
+// const AUTO_SEND_DELAY = 3;
+
+// export default function ChatInput() {
+//   const { t } = useLang();
+
+//   const [input,               setInput]               = useState('');
+//   const [isRecording,         setIsRecording]         = useState(false);
+//   const [recordingTime,       setRecordingTime]       = useState(0);
+//   const [audioUrl,            setAudioUrl]            = useState<string | null>(null);
+//   const [isTranscribing,      setIsTranscribing]      = useState(false);
+//   const [transcribedText,     setTranscribedText]     = useState('');
+//   const [autoSendCountdown,   setAutoSendCountdown]   = useState<number | null>(null);
+//   const [isManualMode,        setIsManualMode]        = useState(false);
+//   const [liveOpen,            setLiveOpen]            = useState(false);
+
+//   const mediaRecRef          = useRef<MediaRecorder | null>(null);
+//   const chunksRef            = useRef<BlobPart[]>([]);
+//   const timerRef             = useRef<NodeJS.Timeout | null>(null);
+//   const autoSendTimerRef     = useRef<NodeJS.Timeout | null>(null);
+//   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+//   const textareaRef          = useRef<HTMLTextAreaElement>(null);
+
+//   const { addMessage, setTyping, isTyping } = useChatStore();
+//   const { setProfil }                        = useSessionStore();
+//   const { setPeerBadge }                     = usePanelStore();
+
+//   useEffect(() => {
+//     const el = textareaRef.current;
+//     if (!el) return;
+//     el.style.height = 'auto';
+//     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+//   }, [input]);
+
+//   useEffect(() => {
+//     const handler = (e: Event) => {
+//       const msg = (e as CustomEvent<string>).detail;
+//       if (msg) sendText(msg);
+//     };
+//     window.addEventListener('sami:suggestion', handler);
+//     return () => window.removeEventListener('sami:suggestion', handler);
+//   }, [isTyping]); // eslint-disable-line
+
+//   useEffect(() => {
+//     if (isRecording) { timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000); }
+//     else             { if (timerRef.current) clearInterval(timerRef.current); setRecordingTime(0); }
+//     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+//   }, [isRecording]);
+
+//   useEffect(() => { return () => { clearAutoSendTimers(); }; }, []);
+
+//   const clearAutoSendTimers = () => {
+//     if (autoSendTimerRef.current)     { clearTimeout(autoSendTimerRef.current);   autoSendTimerRef.current = null; }
+//     if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
+//   };
+
+//   const startRecording = async () => {
+//     try {
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+//       chunksRef.current = [];
+//       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+//       const mr = new MediaRecorder(stream, { mimeType: mime });
+//       mediaRecRef.current = mr;
+//       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+//       mr.onstop = async () => {
+//         stream.getTracks().forEach(t => t.stop());
+//         const blob = new Blob(chunksRef.current, { type: mime });
+//         const url  = URL.createObjectURL(blob);
+//         setAudioUrl(url);
+//         setIsRecording(false);
+//         setTranscribedText('');
+//         setIsManualMode(false);
+//         setAutoSendCountdown(null);
+//         await transcribeToField(blob);
+//       };
+//       mr.start();
+//       setIsRecording(true);
+//       setTranscribedText('');
+//       setAudioUrl(null);
+//       setIsManualMode(false);
+//     } catch { alert("Impossible d'accéder au microphone."); }
+//   };
+
+//   const stopRecording = () => {
+//     if (mediaRecRef.current?.state === 'recording') mediaRecRef.current.stop();
+//   };
+
+//   const transcribeToField = async (blob: Blob) => {
+//     if (blob.size < 600) return;
+//     setIsTranscribing(true);
+//     try {
+//       const fd = new FormData();
+//       fd.append('audio', blob, 'voice.webm');
+//       fd.append('lang', 'fr');
+//       const res  = await fetch(`${API}/api/voice/transcribe`, { method: 'POST', credentials: 'include', body: fd });
+//       const data = await res.json();
+//       if (!data.no_speech && data.text?.trim()) {
+//         const text = data.text.trim();
+//         setTranscribedText(text);
+//         setInput(text);
+//         setTimeout(() => textareaRef.current?.focus(), 100);
+
+//         let remaining = AUTO_SEND_DELAY;
+//         setAutoSendCountdown(remaining);
+
+//         countdownIntervalRef.current = setInterval(() => {
+//           remaining -= 1;
+//           setAutoSendCountdown(remaining);
+//           if (remaining <= 0 && countdownIntervalRef.current) {
+//             clearInterval(countdownIntervalRef.current);
+//             countdownIntervalRef.current = null;
+//           }
+//         }, 1000);
+
+//         autoSendTimerRef.current = setTimeout(() => {
+//           setAutoSendCountdown(null);
+//           setTranscribedText('');
+//           const currentText = textareaRef.current?.value || text;
+//           sendText(currentText);
+//         }, AUTO_SEND_DELAY * 1000);
+//       }
+//     } catch { console.warn('[TRANSCRIBE]'); }
+//     finally { setIsTranscribing(false); }
+//   };
+
+//   const handleTranscriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+//     clearAutoSendTimers();
+//     setAutoSendCountdown(null);
+//     setIsManualMode(true);
+//     setInput(e.target.value);
+//   };
+
+//   const cancelAudio = () => {
+//     clearAutoSendTimers();
+//     setAutoSendCountdown(null);
+//     setIsManualMode(false);
+//     if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); }
+//     setTranscribedText('');
+//     setInput('');
+//   };
+
+//   const sendText = async (text: string) => {
+//     if (!text.trim() || isTyping) return;
+//     clearAutoSendTimers();
+//     setAutoSendCountdown(null);
+//     setIsManualMode(false);
+//     setInput('');
+//     setTranscribedText('');
+//     if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); }
+//     addMessage({ id: uuidv4(), content: text, sender: 'user', created_at: new Date().toISOString() });
+//     setTyping(true);
+//     try {
+//       const data = await chatbotService.sendMessage(text);
+//       addMessage({ id: uuidv4(), content: data.reponse || data.response || '', sender: 'ai', created_at: new Date().toISOString() });
+//       if (data.profil) {
+//         setProfil(data.profil as Parameters<typeof setProfil>[0]);
+//         await persistProfilEnDB(data.profil as Record<string, unknown>);
+//         window.dispatchEvent(new CustomEvent('sami:profile-updated'));
+//       }
+//       if (data.peer_match) setPeerBadge(true);
+//     } catch {
+//       addMessage({ id: uuidv4(), content: t('chat', 'error'), sender: 'ai', created_at: new Date().toISOString() });
+//     } finally { setTyping(false); }
+//   };
+
+//   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+//   const canSend    = (input.trim().length > 0) && !isTyping && !isRecording && !isTranscribing;
+
+//   const CountdownRing = ({ value }: { value: number }) => {
+//     const r = 10, circ = 2 * Math.PI * r;
+//     const progress = (value / AUTO_SEND_DELAY) * circ;
+//     return (
+//       <svg width="28" height="28" viewBox="0 0 28 28" className="rotate-[-90deg]">
+//         <circle cx="14" cy="14" r={r} fill="none" stroke="#fed7aa" strokeWidth="3" />
+//         <circle cx="14" cy="14" r={r} fill="none" stroke="#f97316" strokeWidth="3"
+//           strokeDasharray={`${progress} ${circ}`} strokeLinecap="round"
+//           style={{ transition: 'stroke-dasharray 0.9s linear' }} />
+//       </svg>
+//     );
+//   };
+
+//   return (
+//     <>
+//       {liveOpen && typeof document !== 'undefined' &&
+//         createPortal(<LiveModeModal onClose={() => setLiveOpen(false)} />, document.body)
+//       }
+
+//       <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-6 bg-gradient-to-t from-white dark:from-slate-900 via-white/80 dark:via-slate-900/80 to-transparent">
+//         <div className="max-w-4xl mx-auto space-y-2">
+
+//           {(audioUrl || isTranscribing || transcribedText) && (
+//             <div className="flex flex-col gap-2 p-3 bg-white dark:bg-slate-800 border border-[#006666]/20 dark:border-emerald-700/20 rounded-2xl shadow-sm animate-in slide-in-from-bottom-2 duration-200">
+//               {audioUrl && !isTranscribing && (
+//                 <div className="flex items-center gap-3">
+//                   <audio controls src={audioUrl} className="flex-1 h-8" style={{ minWidth: 0 }} />
+//                   <button onClick={cancelAudio} className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+//                     <X size={15} />
+//                   </button>
+//                 </div>
+//               )}
+//               {isTranscribing && (
+//                 <div className="flex items-center gap-2 text-[12px] text-orange-500 dark:text-orange-400">
+//                   <Loader2 size={13} className="animate-spin shrink-0" />
+//                   <span>{t('panels', 'loading')}</span>
+//                 </div>
+//               )}
+//               {transcribedText && !isTranscribing && (
+//                 <div className="flex items-start gap-2">
+//                   <Edit3 size={13} className="text-[#006666] shrink-0 mt-1" />
+//                   <div className="flex-1 min-w-0">
+//                     <div className="flex items-center justify-between mb-1.5 gap-2">
+//                       <p className="text-[10px] text-[#006666] font-bold uppercase tracking-widest shrink-0">
+//                         {isManualMode ? t('chat', 'send') + ' :' : 'Transcrit — modifie si besoin :'}
+//                       </p>
+//                       {!isManualMode && autoSendCountdown !== null ? (
+//                         <div className="flex items-center gap-1.5 shrink-0">
+//                           <div className="relative flex items-center justify-center">
+//                             <CountdownRing value={autoSendCountdown} />
+//                             <span className="absolute text-[9px] font-black text-orange-500">{autoSendCountdown}</span>
+//                           </div>
+//                           <span className="text-[10px] text-orange-500 font-semibold">envoi auto…</span>
+//                           <button onClick={cancelAudio} className="text-[9px] font-bold text-red-400 hover:text-red-600 underline underline-offset-2 transition-colors ml-0.5">
+//                             {t('common', 'close')}
+//                           </button>
+//                         </div>
+//                       ) : isManualMode ? (
+//                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
+//                           <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+//                           {t('common', 'success')} ↗
+//                         </span>
+//                       ) : null}
+//                     </div>
+//                     <textarea
+//                       value={input}
+//                       onChange={handleTranscriptChange}
+//                       rows={2}
+//                       className={cn(
+//                         'w-full text-sm bg-slate-50 dark:bg-slate-700 border rounded-xl px-3 py-2',
+//                         'text-slate-800 dark:text-slate-100 resize-none outline-none transition-colors',
+//                         isManualMode ? 'border-[#006666] ring-1 ring-[#006666]/20' : 'border-slate-200 dark:border-slate-600 focus:border-[#006666]'
+//                       )}
+//                       placeholder="Modifie le texte ici…"
+//                     />
+//                     {!isManualMode && autoSendCountdown !== null && (
+//                       <p className="text-[9px] text-gray-400 mt-1">💡 Commence à modifier pour annuler l'envoi automatique</p>
+//                     )}
+//                   </div>
+//                 </div>
+//               )}
+//             </div>
+//           )}
+
+//           <div className={cn(
+//             'relative bg-white dark:bg-slate-800 border-2 rounded-[24px] shadow-xl transition-all duration-300',
+//             isRecording
+//               ? 'border-red-400/50 ring-4 ring-red-500/5'
+//               : 'border-gray-100 dark:border-slate-700 focus-within:border-[#006666]/30 focus-within:shadow-2xl'
+//           )}>
+//             <div className="flex items-end gap-2 px-4 py-3">
+//               {!isRecording ? (
+//                 <textarea
+//                   ref={textareaRef}
+//                   value={input}
+//                   onChange={e => {
+//                     if (autoSendCountdown !== null && !isManualMode) {
+//                       clearAutoSendTimers();
+//                       setAutoSendCountdown(null);
+//                       setIsManualMode(true);
+//                     }
+//                     setInput(e.target.value);
+//                   }}
+//                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(input); } }}
+//                   // ← Seul changement : placeholder traduit
+//                   placeholder={isTranscribing ? t('panels', 'loading') : t('chat', 'placeholder')}
+//                   disabled={isTranscribing}
+//                   rows={1}
+//                   className="flex-1 resize-none bg-transparent border-none outline-none text-[15px] py-2.5 max-h-[160px] text-gray-800 dark:text-slate-100 placeholder:text-gray-400"
+//                 />
+//               ) : (
+//                 <div className="flex-1 flex items-center gap-4 py-3 px-2">
+//                   <div className="flex items-center gap-2">
+//                     <span className="relative flex h-3 w-3">
+//                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+//                       <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" />
+//                     </span>
+//                     <span className="text-sm font-mono font-bold text-red-600">{formatTime(recordingTime)}</span>
+//                   </div>
+//                   <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+//                     <div className="h-full bg-gradient-to-r from-red-400 to-red-600 animate-pulse w-full rounded-full" />
+//                   </div>
+//                   <button onClick={stopRecording} className="text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded-lg transition-colors">
+//                     {t('common', 'close')}
+//                   </button>
+//                 </div>
+//               )}
+
+//               <div className="flex items-center gap-1.5 mb-1">
+//                 <button type="button" onClick={() => setLiveOpen(true)} title={t('chat', 'live_hint')}
+//                   className="relative p-2.5 rounded-full bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 ring-1 ring-orange-500/20 hover:ring-orange-500/40 transition-all">
+//                   <Zap size={18} className="fill-orange-500" />
+//                   <span className="absolute top-1 right-1 flex h-2 w-2">
+//                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-60" />
+//                     <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+//                   </span>
+//                 </button>
+
+//                 {!isRecording ? (
+//                   <button type="button" onClick={startRecording} disabled={isTranscribing}
+//                     className="p-2.5 text-gray-400 hover:text-[#006666] hover:bg-emerald-50 dark:hover:bg-emerald-900/10 rounded-full transition-all disabled:opacity-40">
+//                     <Mic size={22} />
+//                   </button>
+//                 ) : (
+//                   <button type="button" onClick={stopRecording}
+//                     className="p-2.5 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-full transition-all animate-pulse">
+//                     <MicOff size={22} />
+//                   </button>
+//                 )}
+
+//                 <button type="button" onClick={() => sendText(input)} disabled={!canSend}
+//                   className={cn(
+//                     'w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300',
+//                     canSend
+//                       ? 'bg-[#006666] text-white shadow-lg shadow-emerald-900/20 hover:scale-105 hover:shadow-xl'
+//                       : 'bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-600 cursor-not-allowed'
+//                   )}>
+//                   {isTyping
+//                     ? <Loader2 size={18} className="animate-spin" />
+//                     : autoSendCountdown !== null && !isManualMode
+//                       ? (
+//                         <div className="relative flex items-center justify-center w-5 h-5">
+//                           <svg width="20" height="20" viewBox="0 0 20 20" className="absolute rotate-[-90deg]">
+//                             <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+//                             <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2"
+//                               strokeDasharray={`${(autoSendCountdown / AUTO_SEND_DELAY) * 50.3} 50.3`}
+//                               strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.9s linear' }} />
+//                           </svg>
+//                           <Send size={12} />
+//                         </div>
+//                       )
+//                       : <Send size={18} />
+//                   }
+//                 </button>
+//               </div>
+//             </div>
+
+//             <div className="px-5 pb-2.5 flex items-center gap-3">
+//               <button onClick={() => setLiveOpen(true)} className="text-[10px] text-orange-400/60 hover:text-orange-400 transition-colors flex items-center gap-1">
+//                 <Zap size={9} className="fill-current" /> {t('chat', 'live_mode')}
+//               </button>
+//               <span className="text-[10px] text-gray-300 dark:text-slate-600">·</span>
+//               <span className="text-[10px] text-gray-400">🎤 {t('chat', 'typing')}</span>
+//             </div>
+
+//             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-[3px] flex rounded-b-full overflow-hidden">
+//               <div className="flex-1 bg-[#006666]" />
+//               <div className="flex-1 bg-[#CC0000]" />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// }
+
+
+
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, X, Zap, Loader2, Edit3 } from 'lucide-react';
+import { Send, Mic, MicOff, X, Zap, Loader2, Edit3, Paperclip, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import { createPortal } from 'react-dom';
@@ -2065,6 +2999,7 @@ import { LiveModeModal } from './LiveModeModal';
 import { useChatStore }    from '@/store/chatStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { usePanelStore }   from '@/store/panelStore';
+import { useLang }         from '@/i18n/LanguageContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -2085,7 +3020,7 @@ async function persistProfilEnDB(profil: Record<string, unknown>) {
       payload.full_name = info.nom ? `${info.prenom} ${info.nom}`.trim() : info.prenom;
     if (acad.moyenne_generale && Number(acad.moyenne_generale) > 0) payload.average  = acad.moyenne_generale;
     if (acad.type_bac && acad.type_bac !== 'AUTRE')                 payload.bac_type = acad.label_bac || acad.type_bac;
-    if (acad.niveau_actuel)    payload.level = acad.niveau_actuel;
+    if (acad.niveau_actuel)       payload.level = acad.niveau_actuel;
     else if (acad.diplome_actuel) payload.level = acad.diplome_actuel;
     if (info.ville) payload.city = info.ville;
     const interets = pref.centres_interet;
@@ -2097,25 +3032,28 @@ async function persistProfilEnDB(profil: Record<string, unknown>) {
       headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
       body: JSON.stringify(payload),
     });
-    console.log('[CHAT→DB] Profil persisté');
   } catch (e) { console.warn('[CHAT→DB]', e); }
 }
 
-// Durée du compte à rebours avant envoi automatique (en secondes)
 const AUTO_SEND_DELAY = 3;
 
 export default function ChatInput() {
-  const [input,               setInput]               = useState('');
-  const [isRecording,         setIsRecording]         = useState(false);
-  const [recordingTime,       setRecordingTime]       = useState(0);
-  const [audioUrl,            setAudioUrl]            = useState<string | null>(null);
-  const [isTranscribing,      setIsTranscribing]      = useState(false);
-  const [transcribedText,     setTranscribedText]     = useState('');
-  // Compte à rebours avant envoi auto (null = pas actif)
-  const [autoSendCountdown,   setAutoSendCountdown]   = useState<number | null>(null);
-  // true = l'étudiant a modifié la transcription → envoi manuel uniquement
-  const [isManualMode,        setIsManualMode]        = useState(false);
-  const [liveOpen,            setLiveOpen]            = useState(false);
+  const { t } = useLang();
+
+  const [input,             setInput]             = useState('');
+  const [isRecording,       setIsRecording]       = useState(false);
+  const [recordingTime,     setRecordingTime]     = useState(0);
+  const [audioUrl,          setAudioUrl]          = useState<string | null>(null);
+  const [isTranscribing,    setIsTranscribing]    = useState(false);
+  const [transcribedText,   setTranscribedText]   = useState('');
+  const [autoSendCountdown, setAutoSendCountdown] = useState<number | null>(null);
+  const [isManualMode,      setIsManualMode]      = useState(false);
+  const [liveOpen,          setLiveOpen]          = useState(false);
+
+  // ── OCR / upload ─────────────────────────────────────────────────────────
+  const [isUploading,  setIsUploading]  = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<string | null>(null); // nom du fichier
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mediaRecRef          = useRef<MediaRecorder | null>(null);
   const chunksRef            = useRef<BlobPart[]>([]);
@@ -2146,33 +3084,81 @@ export default function ChatInput() {
     return () => window.removeEventListener('sami:suggestion', handler);
   }, [isTyping]); // eslint-disable-line
 
-  // Chrono enregistrement
+  // Timer enregistrement
   useEffect(() => {
     if (isRecording) { timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000); }
     else             { if (timerRef.current) clearInterval(timerRef.current); setRecordingTime(0); }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isRecording]);
 
-  // Nettoyage des timers au démontage
-  useEffect(() => {
-    return () => {
-      clearAutoSendTimers();
-    };
-  }, []);
+  useEffect(() => { return () => { clearAutoSendTimers(); }; }, []);
 
-  // ── Helpers timers ────────────────────────────────────────
   const clearAutoSendTimers = () => {
-    if (autoSendTimerRef.current) {
-      clearTimeout(autoSendTimerRef.current);
-      autoSendTimerRef.current = null;
-    }
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current);
-      countdownIntervalRef.current = null;
+    if (autoSendTimerRef.current)     { clearTimeout(autoSendTimerRef.current);   autoSendTimerRef.current = null; }
+    if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null; }
+  };
+
+  // ── Upload bulletin OCR ───────────────────────────────────────────────────
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    setUploadedFile(file.name);
+
+    // Message dans le chat
+    addMessage({
+      id:         uuidv4(),
+      content:    `📎 Fichier envoyé : **${file.name}** — analyse en cours…`,
+      sender:     'user',
+      created_at: new Date().toISOString(),
+    });
+
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const userId = getUserId();
+
+      const res  = await fetch(`${API}/ocr/bulletin`, {
+        method:      'POST',
+        credentials: 'include',
+        headers:     userId ? { 'X-User-Id': userId } : {},
+        body:        fd,
+      });
+      const data = await res.json();
+
+      if (data.success || data.reponse || data.response || data.message) {
+        const reply = data.reponse || data.response || data.message || 'Document analysé avec succès.';
+        addMessage({ id: uuidv4(), content: reply, sender: 'ai', created_at: new Date().toISOString() });
+
+        if (data.profil) {
+          setProfil(data.profil as Parameters<typeof setProfil>[0]);
+          await persistProfilEnDB(data.profil as Record<string, unknown>);
+          window.dispatchEvent(new CustomEvent('sami:profile-updated'));
+        }
+      } else {
+        addMessage({
+          id:         uuidv4(),
+          content:    data.error || 'Impossible d\'analyser ce document. Essaie un PDF ou une image claire.',
+          sender:     'ai',
+          created_at: new Date().toISOString(),
+        });
+      }
+    } catch {
+      addMessage({
+        id:         uuidv4(),
+        content:    '⚠️ Erreur lors de l\'envoi du document. Vérifie ta connexion.',
+        sender:     'ai',
+        created_at: new Date().toISOString(),
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadedFile(null);
+      // Réinitialiser l'input file pour permettre re-upload du même fichier
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // ── Enregistrement vocal ──────────────────────────────────
+  // ── Enregistrement vocal ──────────────────────────────────────────────────
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -2187,7 +3173,6 @@ export default function ChatInput() {
         const url  = URL.createObjectURL(blob);
         setAudioUrl(url);
         setIsRecording(false);
-        // Réinitialiser les états avant transcription
         setTranscribedText('');
         setIsManualMode(false);
         setAutoSendCountdown(null);
@@ -2205,7 +3190,6 @@ export default function ChatInput() {
     if (mediaRecRef.current?.state === 'recording') mediaRecRef.current.stop();
   };
 
-  // ── Transcription → remplit le champ + auto-send ─────────
   const transcribeToField = async (blob: Blob) => {
     if (blob.size < 600) return;
     setIsTranscribing(true);
@@ -2221,7 +3205,6 @@ export default function ChatInput() {
         setInput(text);
         setTimeout(() => textareaRef.current?.focus(), 100);
 
-        // ── Démarrer le compte à rebours pour envoi automatique ──
         let remaining = AUTO_SEND_DELAY;
         setAutoSendCountdown(remaining);
 
@@ -2234,11 +3217,9 @@ export default function ChatInput() {
           }
         }, 1000);
 
-        // Timer principal : envoi après AUTO_SEND_DELAY secondes
         autoSendTimerRef.current = setTimeout(() => {
           setAutoSendCountdown(null);
           setTranscribedText('');
-          // Lire la valeur courante de l'input via le ref du textarea
           const currentText = textareaRef.current?.value || text;
           sendText(currentText);
         }, AUTO_SEND_DELAY * 1000);
@@ -2247,16 +3228,13 @@ export default function ChatInput() {
     finally { setIsTranscribing(false); }
   };
 
-  // ── L'étudiant modifie le texte transcrit → annuler auto-send ──
   const handleTranscriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    // Annuler les timers d'envoi automatique
     clearAutoSendTimers();
     setAutoSendCountdown(null);
-    setIsManualMode(true); // passer en mode manuel
+    setIsManualMode(true);
     setInput(e.target.value);
   };
 
-  // ── Annuler tout (audio + transcription + auto-send) ──────
   const cancelAudio = () => {
     clearAutoSendTimers();
     setAutoSendCountdown(null);
@@ -2266,10 +3244,9 @@ export default function ChatInput() {
     setInput('');
   };
 
-  // ── Envoi du message ──────────────────────────────────────
+  // ── Envoi texte ───────────────────────────────────────────────────────────
   const sendText = async (text: string) => {
     if (!text.trim() || isTyping) return;
-    // Annuler les timers si envoi manuel pendant le countdown
     clearAutoSendTimers();
     setAutoSendCountdown(null);
     setIsManualMode(false);
@@ -2288,34 +3265,36 @@ export default function ChatInput() {
       }
       if (data.peer_match) setPeerBadge(true);
     } catch {
-      addMessage({ id: uuidv4(), content: '⚠️ Erreur. Réessaie.', sender: 'ai', created_at: new Date().toISOString() });
+      addMessage({ id: uuidv4(), content: t('chat', 'error'), sender: 'ai', created_at: new Date().toISOString() });
     } finally { setTyping(false); }
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-  const canSend    = (input.trim().length > 0) && !isTyping && !isRecording && !isTranscribing;
+  const canSend    = input.trim().length > 0 && !isTyping && !isRecording && !isTranscribing;
 
-  // ── Indicateur visuel du countdown (arc SVG) ─────────────
   const CountdownRing = ({ value }: { value: number }) => {
-    const r = 10;
-    const circ = 2 * Math.PI * r;
-    const progress = (value / AUTO_SEND_DELAY) * circ;
+    const r = 10, circ = 2 * Math.PI * r;
     return (
       <svg width="28" height="28" viewBox="0 0 28 28" className="rotate-[-90deg]">
         <circle cx="14" cy="14" r={r} fill="none" stroke="#fed7aa" strokeWidth="3" />
-        <circle
-          cx="14" cy="14" r={r} fill="none"
-          stroke="#f97316" strokeWidth="3"
-          strokeDasharray={`${progress} ${circ}`}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dasharray 0.9s linear' }}
-        />
+        <circle cx="14" cy="14" r={r} fill="none" stroke="#f97316" strokeWidth="3"
+          strokeDasharray={`${(value / AUTO_SEND_DELAY) * circ} ${circ}`}
+          strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.9s linear' }} />
       </svg>
     );
   };
 
   return (
     <>
+      {/* Input file caché pour l'upload bulletin */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
+        onChange={handleFileUpload}
+      />
+
       {liveOpen && typeof document !== 'undefined' &&
         createPortal(<LiveModeModal onClose={() => setLiveOpen(false)} />, document.body)
       }
@@ -2323,72 +3302,61 @@ export default function ChatInput() {
       <div className="sticky bottom-0 left-0 right-0 px-4 pb-6 pt-6 bg-gradient-to-t from-white dark:from-slate-900 via-white/80 dark:via-slate-900/80 to-transparent">
         <div className="max-w-4xl mx-auto space-y-2">
 
-          {/* ── Preview Audio + Transcription ─────────────── */}
+          {/* Indicateur upload en cours */}
+          {isUploading && uploadedFile && (
+            <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-[#006666]/20 rounded-2xl shadow-sm animate-in slide-in-from-bottom-2">
+              <FileText size={16} className="text-[#006666] shrink-0 animate-pulse" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-[#006666]">Analyse du document…</p>
+                <p className="text-[10px] text-slate-400 truncate">{uploadedFile}</p>
+              </div>
+              <Loader2 size={16} className="text-[#006666] animate-spin shrink-0" />
+            </div>
+          )}
+
+          {/* Zone transcription vocale */}
           {(audioUrl || isTranscribing || transcribedText) && (
             <div className="flex flex-col gap-2 p-3 bg-white dark:bg-slate-800 border border-[#006666]/20 dark:border-emerald-700/20 rounded-2xl shadow-sm animate-in slide-in-from-bottom-2 duration-200">
-
-              {/* Lecteur audio */}
               {audioUrl && !isTranscribing && (
                 <div className="flex items-center gap-3">
                   <audio controls src={audioUrl} className="flex-1 h-8" style={{ minWidth: 0 }} />
-                  <button
-                    onClick={cancelAudio}
-                    className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-                  >
+                  <button onClick={cancelAudio} className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
                     <X size={15} />
                   </button>
                 </div>
               )}
-
-              {/* Indicateur transcription */}
               {isTranscribing && (
                 <div className="flex items-center gap-2 text-[12px] text-orange-500 dark:text-orange-400">
                   <Loader2 size={13} className="animate-spin shrink-0" />
                   <span>Transcription en cours…</span>
                 </div>
               )}
-
-              {/* Texte transcrit + compte à rebours */}
               {transcribedText && !isTranscribing && (
                 <div className="flex items-start gap-2">
                   <Edit3 size={13} className="text-[#006666] shrink-0 mt-1" />
                   <div className="flex-1 min-w-0">
-
-                    {/* En-tête : label + état (countdown ou mode manuel) */}
                     <div className="flex items-center justify-between mb-1.5 gap-2">
                       <p className="text-[10px] text-[#006666] font-bold uppercase tracking-widest shrink-0">
-                        {isManualMode ? 'Modifie et envoie :' : 'Transcrit — modifie si besoin :'}
+                        {isManualMode ? 'Modifier :' : 'Transcrit — modifie si besoin :'}
                       </p>
-
                       {!isManualMode && autoSendCountdown !== null ? (
-                        /* ── Compte à rebours actif ── */
                         <div className="flex items-center gap-1.5 shrink-0">
                           <div className="relative flex items-center justify-center">
                             <CountdownRing value={autoSendCountdown} />
-                            <span className="absolute text-[9px] font-black text-orange-500">
-                              {autoSendCountdown}
-                            </span>
+                            <span className="absolute text-[9px] font-black text-orange-500">{autoSendCountdown}</span>
                           </div>
-                          <span className="text-[10px] text-orange-500 font-semibold">
-                            envoi auto…
-                          </span>
-                          <button
-                            onClick={cancelAudio}
-                            className="text-[9px] font-bold text-red-400 hover:text-red-600 underline underline-offset-2 transition-colors ml-0.5"
-                          >
+                          <span className="text-[10px] text-orange-500 font-semibold">envoi auto…</span>
+                          <button onClick={cancelAudio} className="text-[9px] font-bold text-red-400 hover:text-red-600 underline underline-offset-2 transition-colors ml-0.5">
                             Annuler
                           </button>
                         </div>
                       ) : isManualMode ? (
-                        /* ── Mode manuel après modification ── */
                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
                           <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          Prêt — clique sur Envoyer ↗
+                          Prêt ↗
                         </span>
                       ) : null}
                     </div>
-
-                    {/* Textarea éditable */}
                     <textarea
                       value={input}
                       onChange={handleTranscriptChange}
@@ -2396,18 +3364,12 @@ export default function ChatInput() {
                       className={cn(
                         'w-full text-sm bg-slate-50 dark:bg-slate-700 border rounded-xl px-3 py-2',
                         'text-slate-800 dark:text-slate-100 resize-none outline-none transition-colors',
-                        isManualMode
-                          ? 'border-[#006666] ring-1 ring-[#006666]/20'
-                          : 'border-slate-200 dark:border-slate-600 focus:border-[#006666]'
+                        isManualMode ? 'border-[#006666] ring-1 ring-[#006666]/20' : 'border-slate-200 dark:border-slate-600 focus:border-[#006666]'
                       )}
                       placeholder="Modifie le texte ici…"
                     />
-
-                    {/* Indication subtile */}
                     {!isManualMode && autoSendCountdown !== null && (
-                      <p className="text-[9px] text-gray-400 mt-1">
-                        💡 Commence à modifier pour annuler l'envoi automatique
-                      </p>
+                      <p className="text-[9px] text-gray-400 mt-1">💡 Commence à modifier pour annuler l'envoi automatique</p>
                     )}
                   </div>
                 </div>
@@ -2415,7 +3377,7 @@ export default function ChatInput() {
             </div>
           )}
 
-          {/* ── Barre principale ─────────────────────────── */}
+          {/* ── Barre de saisie principale ── */}
           <div className={cn(
             'relative bg-white dark:bg-slate-800 border-2 rounded-[24px] shadow-xl transition-all duration-300',
             isRecording
@@ -2424,13 +3386,31 @@ export default function ChatInput() {
           )}>
             <div className="flex items-end gap-2 px-4 py-3">
 
-              {/* Textarea principal ou état enregistrement */}
+              {/* ── Bouton upload bulletin (Paperclip) ── */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || isTyping}
+                title="Envoyer un bulletin ou document (PDF, image)"
+                className={cn(
+                  'p-2.5 rounded-full transition-all shrink-0 mb-0.5',
+                  isUploading
+                    ? 'text-[#006666] bg-emerald-50 dark:bg-emerald-900/10 animate-pulse'
+                    : 'text-gray-400 hover:text-[#006666] hover:bg-emerald-50 dark:hover:bg-emerald-900/10 disabled:opacity-40'
+                )}
+              >
+                {isUploading
+                  ? <Loader2 size={20} className="animate-spin" />
+                  : <Paperclip size={20} />
+                }
+              </button>
+
+              {/* ── Zone texte ou chrono enregistrement ── */}
               {!isRecording ? (
                 <textarea
                   ref={textareaRef}
                   value={input}
                   onChange={e => {
-                    // Si on modifie directement le champ principal pendant le countdown
                     if (autoSendCountdown !== null && !isManualMode) {
                       clearAutoSendTimers();
                       setAutoSendCountdown(null);
@@ -2438,16 +3418,11 @@ export default function ChatInput() {
                     }
                     setInput(e.target.value);
                   }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendText(input);
-                    }
-                  }}
-                  placeholder={isTranscribing ? 'Transcription…' : 'Pose ta question à SAMI…'}
-                  disabled={isTranscribing}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(input); } }}
+                  placeholder={isTranscribing ? 'Transcription en cours…' : isUploading ? 'Analyse du document…' : t('chat', 'placeholder')}
+                  disabled={isTranscribing || isUploading}
                   rows={1}
-                  className="flex-1 resize-none bg-transparent border-none outline-none text-[15px] py-2.5 max-h-[160px] text-gray-800 dark:text-slate-100 placeholder:text-gray-400"
+                  className="flex-1 resize-none bg-transparent border-none outline-none text-[15px] py-2.5 max-h-[160px] text-gray-800 dark:text-slate-100 placeholder:text-gray-400 disabled:opacity-50"
                 />
               ) : (
                 <div className="flex-1 flex items-center gap-4 py-3 px-2">
@@ -2461,25 +3436,17 @@ export default function ChatInput() {
                   <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-red-400 to-red-600 animate-pulse w-full rounded-full" />
                   </div>
-                  <button
-                    onClick={stopRecording}
-                    className="text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded-lg transition-colors"
-                  >
+                  <button onClick={stopRecording} className="text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded-lg transition-colors">
                     Arrêter
                   </button>
                 </div>
               )}
 
-              {/* Boutons droite */}
+              {/* ── Boutons droite ── */}
               <div className="flex items-center gap-1.5 mb-1">
-
-                {/* Bouton LIVE */}
-                <button
-                  type="button"
-                  onClick={() => setLiveOpen(true)}
-                  title="Mode Live — conversation vocale temps réel"
-                  className="relative p-2.5 rounded-full bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 ring-1 ring-orange-500/20 hover:ring-orange-500/40 transition-all"
-                >
+                {/* Live ⚡ */}
+                <button type="button" onClick={() => setLiveOpen(true)} title="Mode Live — conversation vocale"
+                  className="relative p-2.5 rounded-full bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 ring-1 ring-orange-500/20 hover:ring-orange-500/40 transition-all">
                   <Zap size={18} className="fill-orange-500" />
                   <span className="absolute top-1 right-1 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-60" />
@@ -2489,52 +3456,35 @@ export default function ChatInput() {
 
                 {/* Micro */}
                 {!isRecording ? (
-                  <button
-                    type="button"
-                    onClick={startRecording}
-                    disabled={isTranscribing}
-                    title="Enregistrer — transcription affichée avant envoi automatique"
-                    className="p-2.5 text-gray-400 hover:text-[#006666] hover:bg-emerald-50 dark:hover:bg-emerald-900/10 rounded-full transition-all disabled:opacity-40"
-                  >
+                  <button type="button" onClick={startRecording} disabled={isTranscribing || isUploading}
+                    className="p-2.5 text-gray-400 hover:text-[#006666] hover:bg-emerald-50 dark:hover:bg-emerald-900/10 rounded-full transition-all disabled:opacity-40">
                     <Mic size={22} />
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={stopRecording}
-                    className="p-2.5 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-full transition-all animate-pulse"
-                  >
+                  <button type="button" onClick={stopRecording}
+                    className="p-2.5 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-full transition-all animate-pulse">
                     <MicOff size={22} />
                   </button>
                 )}
 
                 {/* Envoyer */}
-                <button
-                  type="button"
-                  onClick={() => sendText(input)}
-                  disabled={!canSend}
+                <button type="button" onClick={() => sendText(input)} disabled={!canSend}
                   className={cn(
                     'w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300',
                     canSend
                       ? 'bg-[#006666] text-white shadow-lg shadow-emerald-900/20 hover:scale-105 hover:shadow-xl'
                       : 'bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-600 cursor-not-allowed'
-                  )}
-                >
+                  )}>
                   {isTyping
                     ? <Loader2 size={18} className="animate-spin" />
                     : autoSendCountdown !== null && !isManualMode
-                      /* Mini ring dans le bouton Send pendant le countdown */
                       ? (
                         <div className="relative flex items-center justify-center w-5 h-5">
                           <svg width="20" height="20" viewBox="0 0 20 20" className="absolute rotate-[-90deg]">
                             <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                            <circle
-                              cx="10" cy="10" r="8" fill="none"
-                              stroke="currentColor" strokeWidth="2"
+                            <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2"
                               strokeDasharray={`${(autoSendCountdown / AUTO_SEND_DELAY) * 50.3} 50.3`}
-                              strokeLinecap="round"
-                              style={{ transition: 'stroke-dasharray 0.9s linear' }}
-                            />
+                              strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.9s linear' }} />
                           </svg>
                           <Send size={12} />
                         </div>
@@ -2545,21 +3495,20 @@ export default function ChatInput() {
               </div>
             </div>
 
-            {/* Hint bas */}
+            {/* Footer hints */}
             <div className="px-5 pb-2.5 flex items-center gap-3">
-              <button
-                onClick={() => setLiveOpen(true)}
-                className="text-[10px] text-orange-400/60 hover:text-orange-400 transition-colors flex items-center gap-1"
-              >
-                <Zap size={9} className="fill-current" /> Mode Live — parler directement à SAMI
+              <button onClick={() => setLiveOpen(true)} className="text-[10px] text-orange-400/60 hover:text-orange-400 transition-colors flex items-center gap-1">
+                <Zap size={9} className="fill-current" /> Mode Live
               </button>
               <span className="text-[10px] text-gray-300 dark:text-slate-600">·</span>
-              <span className="text-[10px] text-gray-400">
-                🎤 Micro → envoi auto dans {AUTO_SEND_DELAY}s · modifie pour annuler
-              </span>
+              <button onClick={() => fileInputRef.current?.click()} className="text-[10px] text-gray-400 hover:text-[#006666] transition-colors flex items-center gap-1">
+                <Paperclip size={9} /> Envoyer un bulletin
+              </button>
+              <span className="text-[10px] text-gray-300 dark:text-slate-600">·</span>
+              <span className="text-[10px] text-gray-400">🎤 Ou parle directement</span>
             </div>
 
-            {/* Barre déco */}
+            {/* Barre déco SUPMTI */}
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-[3px] flex rounded-b-full overflow-hidden">
               <div className="flex-1 bg-[#006666]" />
               <div className="flex-1 bg-[#CC0000]" />
