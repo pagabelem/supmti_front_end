@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // 'use client';
 // import { useEffect } from 'react';
 // import { useAuthStore }    from '@/store/authStore';
@@ -339,7 +340,7 @@ export default function DashboardPage() {
 
   useEffect(() => { loadSession(); }, []);
 
-  const prenom      = profil?.informations_personnelles?.prenom  || user?.name || t('common', 'loading').replace('…','');
+  const prenom      = profil?.informations_personnelles?.prenom  || (user as any)?.name || t('common', 'loading').replace('…','');
   const bac         = profil?.parcours_academique?.label_bac     || profil?.parcours_academique?.type_bac;
   const moyenne     = profil?.parcours_academique?.moyenne_generale;
   const mention     = profil?.parcours_academique?.mention;

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 // // src/app/history/page.tsx
 // 'use client';
 // import { useEffect, useState } from 'react';

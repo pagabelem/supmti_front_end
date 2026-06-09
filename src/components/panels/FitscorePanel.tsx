@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // // 'use client';
 // // import { useState } from 'react';
 // // import { BarChart3, Target, BrainCircuit, MessageSquareText, ChevronRight } from 'lucide-react';

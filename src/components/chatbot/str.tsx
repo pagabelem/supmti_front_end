@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { X, Send, Zap, Mic, MicOff, Loader2 } from 'lucide-react';

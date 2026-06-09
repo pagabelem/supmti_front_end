@@ -155,13 +155,13 @@ export default function AdminFitscore() {
     .sort(([,a]:any,[,b]:any) => b-a) : [];
 
   const radarData = data?.fitscore_par_bac?.[selBac] || {};
-  const avgScore = sorted.length > 0 ? (sorted.reduce((acc, [,s]) => acc + s, 0) / sorted.length).toFixed(1) : '0';
+  const avgScore = sorted.length > 0 ? (sorted.reduce((acc, [,s]:any) => acc + s, 0) / sorted.length).toFixed(1) : '0';
   
   // Calcul sécurisé pour l'interprétation
-  const radarEntries = Object.entries(radarData);
+  const radarEntries: Array<[string, number]> = Object.entries(radarData).map(([k, v]) => [k, Number(v)]);
   const hasRadarData = radarEntries.length > 0;
   const bestFiliere = hasRadarData ? radarEntries.sort(([,a],[,b]) => b - a)[0][0] : 'aucune';
-  const bestScore = hasRadarData ? Math.max(...Object.values(radarData)) : 0;
+  const bestScore = hasRadarData ? Math.max(...Object.values(radarData).map(Number)) : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">

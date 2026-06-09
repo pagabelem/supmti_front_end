@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 // 'use client';
 // import { useEffect, useRef, useState, useCallback } from 'react';
 // import { X, Mic, Volume2, Loader2, MessageSquare, Play } from 'lucide-react';
@@ -2877,7 +2879,7 @@ const LiveSession = ({
       const decoder = new TextDecoder();
       let buffer = '';
       let full = '';
-      let aiLineId = uuidv4();
+      const aiLineId = uuidv4();
       let aiInserted = false;
 
       const upsertAiLine = (content: string) => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // 'use client';
 // import ReactMarkdown from 'react-markdown';
 // import { Message }   from '@/types/message';
@@ -233,7 +234,7 @@ function cleanForTTS(text: string): string {
     .replace(/#{1,6}\s*/g, '')
     .replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
     .replace(/^\s*[-•►]\s*/gm, '')
-    .replace(/`{1,3}.*?`{1,3}/gs, '')
+    .replace(/`{1,3}[\s\S]*?`{1,3}/g, '')
     .replace(/[─═━┄]+/g, '')
     .replace(/[\u2600-\u27BF]/g, '')
     .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '')

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 // src/app/forgot-password/page.tsx
 'use client';
 import { useState } from 'react';

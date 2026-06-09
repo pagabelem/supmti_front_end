@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 function getUid() { try { return JSON.parse(localStorage.getItem('supmti-auth')||'{}')?.state?.user?.id||''; } catch { return ''; } }
-function headers() { const u=getUid(); return u?{'X-User-Id':u}:{}; }
+function headers(): HeadersInit { const u = getUid(); const h: Record<string,string> = {}; if (u) h['X-User-Id'] = String(u); return h; }
 
 interface Doc {
   id: string; title: string; source?: string;

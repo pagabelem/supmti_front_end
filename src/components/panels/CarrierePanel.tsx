@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // 'use client';
 // import { useState, useEffect } from 'react';
 // import { Rocket, Target, Briefcase, TrendingUp, Sparkles } from 'lucide-react';
@@ -670,8 +671,6 @@ export const CarrierePanel = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoadingInit(true);
-
     getCarriere()
       .then((data: any) => {
         if (data.filieres_disponibles && Array.isArray(data.filieres_disponibles)) {

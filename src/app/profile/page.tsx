@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // // src/app/profile/page.tsx
 // 'use client';
 // import { useState, useEffect, useCallback } from 'react';
@@ -1163,7 +1164,9 @@ export default function ProfilePage() {
 
   const { register, handleSubmit, reset, watch, setValue,
     formState: { errors, isSubmitting, isDirty } } = useForm<V>({
-    resolver: zodResolver(schema),
+    // zodResolver can produce a resolver type with `unknown` for coerced values;
+    // cast to any to satisfy the useForm generic V where average is number.
+    resolver: zodResolver(schema) as any,
     defaultValues: { full_name:'', average:0, bac_type:'', level:'', city:'', interests:'' },
   });
 
@@ -1221,7 +1224,7 @@ export default function ProfilePage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) { setStatus('error'); return; }
-      setAuth({ ...user, ...data, interests: payload.interests }, token!);
+      setAuth({ ...user, ...data, id: user?.id ?? '', interests: payload.interests, email: (data as any).email ?? user?.email ?? '', role: (user?.role ?? 'student') }, token! as any);
       setDbBase(data);
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);

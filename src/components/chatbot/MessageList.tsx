@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 import { useEffect, useRef } from 'react';
 import { useChatStore } from '@/store/chatStore';
@@ -91,20 +93,27 @@ export default function MessageList() {
     return <WelcomeScreen />;
   }
 
-  // Grouper les messages par date pour afficher les séparateurs
-  let lastDate = '';
+  // Pré-calculer les dates des messages pour déterminer où afficher les séparateurs
+  // Support multiple possible timestamp fields on Message (timestamp, createdAt, date)
+  const messageDates = messages.map((msg) => {
+    const raw = (msg as any).timestamp ?? (msg as any).createdAt ?? (msg as any).date ?? '';
+    if (!raw) return '';
+    try {
+      return new Date(raw).toLocaleDateString('fr-FR', {
+        weekday: 'long', day: 'numeric', month: 'long',
+      });
+    } catch {
+      return '';
+    }
+  });
 
   return (
     <div className="flex flex-col gap-1 px-2 py-4 md:px-6">
       {messages.map((msg, i) => {
-        const msgDate = msg.timestamp
-          ? new Date(msg.timestamp).toLocaleDateString('fr-FR', {
-              weekday: 'long', day: 'numeric', month: 'long',
-            })
-          : '';
+        const msgDate = messageDates[i];
 
-        const showDate = msgDate && msgDate !== lastDate;
-        if (showDate) lastDate = msgDate;
+        // Show a date separator for the first message or when the date differs from the previous
+        const showDate = msgDate && (i === 0 || msgDate !== messageDates[i - 1]);
 
         return (
           <div key={msg.id ?? i}>

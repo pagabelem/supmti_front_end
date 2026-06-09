@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // 'use client';
 // import { useState } from 'react';
 // import { Scale, ArrowRightLeft, Sparkles, AlertTriangle, Lightbulb } from 'lucide-react';

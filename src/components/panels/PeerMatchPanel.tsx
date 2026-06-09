@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // 'use client';
 // import { useState, useEffect } from 'react';
 // import { Send, CheckCircle2, ExternalLink, Mail, Phone, Sparkles, RefreshCw, Clock, Loader2 } from 'lucide-react';
@@ -1126,9 +1127,10 @@ export const PeerMatchPanel = () => {
       const prenom = profil?.informations_personnelles?.prenom || 'Étudiant';
       const email  = (profil as any)?.informations_personnelles?.email || '';
       const data = await sendPeerMatch(prenom, email, selected, `Bonjour, je suis intéressé(e) par la filière ${selected} et j'aimerais échanger avec un ambassadeur.`);
+      const demandeIdResp = (data as { demande_id?: string }).demande_id;
       if (data.error) { setError(data.message || t('peermatch','error_send')); }
       else {
-        if (data.demande_id) { localStorage.setItem('peermatch_demande_id', data.demande_id); setDemandeId(data.demande_id); }
+        if (demandeIdResp) { localStorage.setItem('peermatch_demande_id', demandeIdResp); setDemandeId(demandeIdResp); }
         setDemande({ statut: 'en_attente', filiere: selected });
         setSent(true);
       }

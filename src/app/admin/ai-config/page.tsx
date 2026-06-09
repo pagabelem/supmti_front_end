@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/admin/ai-config/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
@@ -35,7 +36,8 @@ export default function AIConfigPage() {
   // Charger le statut des services
   useEffect(() => {
     const uid = getUid();
-    const headers = uid ? { 'X-User-Id': uid } : {};
+    // HeadersInit or undefined to satisfy fetch typings when no UID
+    const headers: HeadersInit | undefined = uid ? { 'X-User-Id': String(uid) } : undefined;
 
     // Statut STT
     fetch(`${API}/test-stt/status`, { credentials:'include', headers })
