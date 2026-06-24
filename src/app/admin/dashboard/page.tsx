@@ -23,9 +23,9 @@ const CARDS = [
   { key:'total_ambassadeurs',    label:'Ambassadeurs actifs', icon:UserCheck,      color:'text-purple-400',     bg:'bg-purple-500/10',     border:'border-purple-500/20',     href:'/admin/ambassadors'  },
   { key:'total_messages',        label:'Messages échangés',   icon:Activity,      color:'text-cyan-400',       bg:'bg-cyan-500/10',       border:'border-cyan-500/20',       href:'/admin/conversations' },
   { key:'inscriptions_recentes', label:'Inscriptions (7j)',   icon:TrendingUp,     color:'text-pink-400',       bg:'bg-pink-500/10',       border:'border-pink-500/20',       href:'/admin/users'        },
-  { key:'total_visiteurs_anonymes',      label:'Visiteurs anonymes',     icon:Users,         color:'text-purple-400',     bg:'bg-purple-500/10',     border:'border-purple-500/20',     href:'/admin/conversations' },
-  { key:'total_anonymous_conversations', label:'Conversations anonymes', icon:MessageSquare, color:'text-cyan-400',       bg:'bg-cyan-500/10',       border:'border-cyan-500/20',       href:'/admin/conversations' },
-  { key:'total_anonymous_messages',      label:'Messages anonymes',      icon:Activity,      color:'text-accent-green',   bg:'bg-accent-green/10',   border:'border-accent-green/20',   href:'/admin/conversations' },
+  { key:'total_visiteurs_anonymes',      label:'Visiteurs anonymes',     icon:Users,         color:'text-purple-400',     bg:'bg-purple-500/10',     border:'border-purple-500/20',     href:'/admin/anonymous' },
+  { key:'total_anonymous_conversations', label:'Conversations anonymes', icon:MessageSquare, color:'text-cyan-400',       bg:'bg-cyan-500/10',       border:'border-cyan-500/20',       href:'/admin/anonymous' },
+  { key:'total_anonymous_messages',      label:'Messages anonymes',      icon:Activity,      color:'text-accent-green',   bg:'bg-accent-green/10',   border:'border-accent-green/20',   href:'/admin/anonymous' },
 ];
 
 const CITY_COORDS: Record<string,{x:number,y:number}> = {
