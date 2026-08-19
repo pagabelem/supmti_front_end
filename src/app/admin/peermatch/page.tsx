@@ -732,9 +732,9 @@ export default function AdminPeermatch() {
                   return (
                     <div 
                       key={d.id} 
-                      className="group relative overflow-hidden bg-white dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-[#006666]/50 hover:shadow-xl transition-all duration-300"
+                      className="group relative bg-white dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-[#006666]/50 hover:shadow-xl transition-all duration-300"
                     >
-                      <div className={cn("absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none", cfg.gradient)} />
+                      <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none", cfg.gradient)} />
                       
                       <div className="relative p-6">
                         <div className="flex items-start gap-5">
